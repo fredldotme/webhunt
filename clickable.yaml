@@ -17,6 +17,7 @@ libraries:
     builder: cmake
     build_args: [
       -DPORT=WPE,
+      -DDEVELOPER_MODE=ON,
       -DENABLE_WPE_QT_API=ON,
       -DENABLE_DOCUMENTATION=OFF,
       -DUSE_SOUP2=ON,
