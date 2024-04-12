@@ -25,7 +25,7 @@ int main(int argc, char *argv[])
 {
     //qputenv("QT_QPA_PLATFORM", "wayland-egl");
     qputenv("WEBKIT_EXEC_PATH", "/opt/click.ubuntu.com/webhunt.fredldotme/current/lib/aarch64-linux-gnu/wpe-webkit-1.0");
-    qputenv("WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS", "1");
+    //qputenv("WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS", "1");
 
     QGuiApplication *app = new QGuiApplication(argc, (char**)argv);
     app->setApplicationName("webhunt.fredldotme");
