@@ -1,0 +1,3 @@
+[submodule "libs/WebKit"]
+	path = libs/WebKit
+	url = https://github.com/fredldotme/WebKit.git
