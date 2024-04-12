@@ -14,9 +14,12 @@ dependencies_target:
   - libwpe-1.0-1
 libraries:
   WebKit:
+    make_jobs: 4
     builder: cmake
     build_args: [
       -DPORT=WPE,
+      -DDEVELOPER_MODE=OFF,
+      -DDEVELOPER_MODE_FATAL_WARNINGS=OFF,
       -DENABLE_TOUCH_EVENTS=ON,
       -DENABLE_WPE_QT_API=ON,
       -DENABLE_DOCUMENTATION=OFF,
