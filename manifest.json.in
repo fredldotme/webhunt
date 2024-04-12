@@ -1,0 +1,15 @@
+{
+    "name": "webhunt.fredldotme",
+    "description": "A WebKit browser",
+    "architecture": "@CLICK_ARCH@",
+    "title": "WebHunt",
+    "hooks": {
+        "webhunt": {
+            "apparmor": "webhunt.apparmor",
+            "desktop":  "webhunt.desktop"
+        }
+    },
+    "version": "0.0.1",
+    "maintainer": "Alfred Neumayer <dev.beidl@gmail.com>",
+    "framework" : "@CLICK_FRAMEWORK@"
+}

@@ -1,0 +1,85 @@
+clickable_minimum_required: 8.0.0
+builder: cmake
+kill: webhunt
+install_lib:
+  - "build/$ARCH_TRIPLET/WebKit/install/lib/lib*.so*"
+  - "build/$ARCH_TRIPLET/WebKit/install/libexec/*"
+  - "build/$ARCH_TRIPLET/WebKit/install/lib/wpe-webkit-1.0/*"
+  - "/usr/lib/$ARCH_TRIPLET/libWPEBackend-fdo-1.0.so*"
+  - "/usr/lib/$ARCH_TRIPLET/libwpe-1.0.so*"
+install_qml:
+  - "build/$ARCH_TRIPLET/WebKit/install/lib/qt5/qml/*"
+dependencies_target:
+  - libwpebackend-fdo-1.0-1
+  - libwpe-1.0-1
+libraries:
+  WebKit:
+    builder: cmake
+    build_args: [
+      -DPORT=WPE,
+      -DENABLE_WPE_QT_API=ON,
+      -DENABLE_DOCUMENTATION=OFF,
+      -DUSE_SOUP2=ON,
+      -DUSE_AVIF=OFF,
+      -DUSE_GSTREAMER_TRANSCODER=OFF
+    ]
+    dependencies_host:
+      - ruby
+      - pkg-config
+      - unifdef
+      - wayland-protocols
+      - libtool
+      - gobject-introspection
+      - gperf
+    dependencies_target:
+      - libatk-bridge2.0-dev
+      - libcairo2-dev
+      - libgbm-dev
+      - libgnutls28-dev
+      - libharfbuzz-dev
+      - libicu-dev
+      - libwpewebkit-1.0-dev
+      - libxml2-dev
+      - zlib1g-dev
+      - libegl-mesa0
+      - libluajit-5.1-dev
+      - libmount-dev
+      - libopus-dev
+      - libpulse-dev
+      - libsrtp2-dev
+      - libtheora-dev
+      - libvorbis-dev
+      - libvpx-dev
+      - libxcb-glx0-dev
+      - libxcb-xkb-dev
+      - libxkbcommon-dev
+      - libxrandr-dev
+      - libdrm-dev
+      - libgbm-dev
+      - libepoxy-dev
+      - libgcrypt20-dev
+      - libasound2-dev
+      - libatk1.0-dev
+      - libenchant-2-dev
+      - libepoxy-dev
+      - libevent-dev
+      - libfile-copy-recursive-perl
+      - libgstreamer1.0-dev
+      - libgstreamer-plugins-bad1.0-dev
+      - libgstreamer-plugins-base1.0-dev
+      - libkate-dev
+      - liblcms2-dev
+      - libmanette-0.2-dev
+      - libopenjp2-7-dev
+      - libpng-dev
+      - libseccomp-dev
+      - libsqlite3-dev
+      - libsystemd-dev
+      - libtasn1-6-dev
+      - libwayland-dev
+      - libwebp-dev
+      - libwoff-dev
+      - libwpebackend-fdo-1.0-dev
+      - libxml2-utils
+      - libxslt1-dev
+      - libgirepository1.0-dev
