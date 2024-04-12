@@ -2,6 +2,14 @@
 
 A WebKit browser
 
+## How to build
+
+Get & setup [Clickable](https://clickable-ut.dev) and run:
+
+```
+clickable build --libs && clickable build
+```
+
 ## License
 
 Copyright (C) 2024  Alfred Neumayer
