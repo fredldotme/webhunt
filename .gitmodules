@@ -1,3 +1,6 @@
 [submodule "libs/WebKit"]
 	path = libs/WebKit
 	url = https://github.com/fredldotme/WebKit.git
+[submodule "libs/WPEBackend"]
+	path = libs/WPEBackend
+	url = https://github.com/fredldotme/WPEBackend-hybris
