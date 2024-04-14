@@ -10,9 +10,21 @@ install_lib:
 install_qml:
   - "build/$ARCH_TRIPLET/WebKit/install/lib/qt5/qml/*"
 dependencies_target:
-  - libwpebackend-fdo-1.0-1
-  - libwpe-1.0-1
+  - libwpebackend-fdo-1.0-dev
+  - libwpe-1.0-dev
 libraries:
+  #WPEBackend:
+  #  make_jobs: 4
+  #  builder: custom
+  #  build: "cd $BUILD_DIR && meson --prefix=/ $SRC_DIR && ninja && env DESTDIR=$INSTALL_DIR ninja install"
+  #  dependencies_host:
+  #    - meson
+  #    - ninja-build
+  #    - pkg-config
+  #    - libepoxy-dev
+  #    - libwayland-bin
+  #    - libwayland-dev
+  #    - libwpe-1.0-dev
   WebKit:
     make_jobs: 4
     builder: cmake
@@ -21,6 +33,9 @@ libraries:
       -DDEVELOPER_MODE=OFF,
       -DDEVELOPER_MODE_FATAL_WARNINGS=OFF,
       -DENABLE_TOUCH_EVENTS=ON,
+      -DENABLE_OVERFLOW_SCROLLING_TOUCH=ON,
+      -DENABLE_PDFJS=ON,
+      -DENABLE_WEBASSEMBLY=ON,
       -DENABLE_WPE_QT_API=ON,
       -DENABLE_DOCUMENTATION=OFF,
       -DUSE_SOUP2=ON,
