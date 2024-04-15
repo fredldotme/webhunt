@@ -16,6 +16,7 @@
 
 #include <QGuiApplication>
 #include <QCoreApplication>
+#include <QDebug>
 #include <QDir>
 #include <QUrl>
 #include <QString>
@@ -23,10 +24,25 @@
 
 int main(int argc, char *argv[])
 {
-    //qputenv("QT_QPA_PLATFORM", "wayland-egl");
+    qputenv("QT_QPA_PLATFORM", "wayland-egl");
+    qputenv("QT_WAYLAND_DISABLE_WINDOWDECORATION", "1");
     qputenv("WEBKIT_EXEC_PATH", "/opt/click.ubuntu.com/webhunt.fredldotme/current/lib/aarch64-linux-gnu/wpe-webkit-1.0");
+    qputenv("HYBRIS_EGLPLATFORM", "wayland");
+    qputenv("WEBKIT_GST_CUSTOM_VIDEO_SINK", "hybrissink");
+    qputenv("WEBKIT_GST_USE_PLAYBIN3", "0");
     //qputenv("WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS", "1");
 
+    if (getenv("GRID_UNIT_PX")) {
+        auto scaleFactor = std::atoi(getenv("GRID_UNIT_PX")) / 8.0f;
+        char buf[32];
+        std::sprintf(buf, "%.2f", scaleFactor);
+        const auto scaleFactorStr = QString::fromStdString(std::string(buf));
+        qputenv("QT_SCALE_FACTOR", scaleFactorStr.toUtf8());
+        qInfo() << "Scaling to " << scaleFactorStr << "x";
+    }
+    //qputenv("QT_SCREEN_SCALE_FACTOR", "3");
+
+    QGuiApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
     QGuiApplication *app = new QGuiApplication(argc, (char**)argv);
     app->setApplicationName("webhunt.fredldotme");
 

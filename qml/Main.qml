@@ -42,16 +42,22 @@ MainView {
         ColumnLayout {
             spacing: units.gu(2)
             anchors {
-                margins: units.gu(2)
                 top: header.bottom
                 left: parent.left
                 right: parent.right
                 bottom: parent.bottom
             }
 
+            TextField {
+                Layout.fillWidth: true
+                text: "https://weasel.firmfriends.us/HTMLVideoFromCloud/"
+                inputMethodHints: Qt.ImhUrlCharactersOnly
+                onAccepted: webView.url = text
+            }
+
             WPEView {
                 id: webView
-                url: "https://ubports.com"
+                url: "webkit://gpu"
                 Layout.fillHeight: true
                 Layout.fillWidth: true
             }
