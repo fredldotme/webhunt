@@ -32,35 +32,78 @@ MainView {
     height: units.gu(75)
 
     Page {
+        header: Item {}
         anchors.fill: parent
+        anchors.bottomMargin: !Qt.inputMethod.visible ? 0 : Qt.inputMethod.keyboardRectangle.height
 
-        header: PageHeader {
-            id: header
-            title: i18n.tr('WebHunt')
-        }
+        Item {
+            anchors.fill: parent
+            readonly property real visibilityAndScale: bottomEdge.dragProgress < (units.gu(4) / root.height) ? 1.0 : (1.0 - bottomEdge.dragProgress)
+            scale: visibilityAndScale == 1.0 ? 1.0 : Math.min(visibilityAndScale * 3, 1.0)
+            opacity: visibilityAndScale
 
-        ColumnLayout {
-            spacing: units.gu(2)
-            anchors {
-                top: header.bottom
-                left: parent.left
-                right: parent.right
-                bottom: parent.bottom
+            Behavior on scale {
+                NumberAnimation { duration: 100 }
             }
-
-            TextField {
-                Layout.fillWidth: true
-                text: "https://weasel.firmfriends.us/HTMLVideoFromCloud/"
-                inputMethodHints: Qt.ImhUrlCharactersOnly
-                onAccepted: webView.url = text
+            Behavior on opacity {
+                NumberAnimation { duration: 100 }
             }
 
             WPEView {
                 id: webView
                 url: "webkit://gpu"
-                Layout.fillHeight: true
-                Layout.fillWidth: true
+                anchors.fill: parent
             }
+        }
+
+        BottomEdge {
+            id: bottomEdge
+            height: parent.height
+            visible: !Qt.inputMethod.visible
+            onCollapseCompleted: {
+                webView.focus = false
+                webView.focus = true
+            }
+            onCommitCompleted: {
+                webView.focus = false
+            }
+            contentComponent: Item {
+                width: bottomEdge.width
+                height: bottomEdge.height
+
+                ColumnLayout {
+                    anchors.fill: parent
+                    TextField {
+                        id: urlField
+
+                        Layout.margins: units.gu(2)
+                        Layout.alignment: Qt.AlignHCenter | Qt.AlignTop
+                        Layout.preferredWidth: (parent.width / 3) * 2
+                        Layout.maximumWidth: parent.width - units.gu(4)
+                        Layout.preferredHeight: units.gu(4)
+                        Layout.fillWidth: focus
+
+                        focus: !webView.focus
+                        text: "https://weasel.firmfriends.us/HTMLVideoFromCloud/"
+                        inputMethodHints: Qt.ImhUrlCharactersOnly
+
+                        Behavior on width {
+                            NumberAnimation { duration: 75 }
+                        }
+                        onAccepted: webView.url = text
+                    }
+                }
+            }
+            regions: [
+                BottomEdgeRegion {
+                    from: 0.0
+                    to: units.gu(4) / root.height
+                },
+                BottomEdgeRegion {
+                    from: (units.gu(4) / root.height) + 0.1
+                    to: 1.0
+                }
+            ]
         }
     }
 }

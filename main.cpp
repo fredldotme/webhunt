@@ -28,7 +28,10 @@ int main(int argc, char *argv[])
     qputenv("QT_WAYLAND_DISABLE_WINDOWDECORATION", "1");
     qputenv("WEBKIT_EXEC_PATH", "/opt/click.ubuntu.com/webhunt.fredldotme/current/lib/aarch64-linux-gnu/wpe-webkit-1.0");
     qputenv("HYBRIS_EGLPLATFORM", "wayland");
-    qputenv("WEBKIT_GST_CUSTOM_VIDEO_SINK", "hybrissink");
+    qputenv("GST_GL_API", "gles2");
+    qputenv("GST_GL_PLATFORM", "egl");
+    qputenv("GST_GL_WINDOW", "wayland");
+    //qputenv("WEBKIT_GST_CUSTOM_VIDEO_SINK", "hybrissink");
     qputenv("WEBKIT_GST_USE_PLAYBIN3", "0");
     //qputenv("WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS", "1");
 
