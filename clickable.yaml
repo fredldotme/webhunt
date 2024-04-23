@@ -4,60 +4,132 @@ kill: webhunt
 install_lib:
   - "build/$ARCH_TRIPLET/WebKit/install/lib/lib*.so*"
   - "build/$ARCH_TRIPLET/WebKit/install/libexec/*"
-  - "build/$ARCH_TRIPLET/WebKit/install/lib/wpe-webkit-1.0/*"
-  - "/usr/lib/$ARCH_TRIPLET/libWPEBackend-fdo-1.0.so*"
-  - "/usr/lib/$ARCH_TRIPLET/libwpe-1.0.so*"
+  - "build/$ARCH_TRIPLET/WebKit/install/lib/wpe-webkit-2.0/*"
+  - "build/$ARCH_TRIPLET/glib/install/lib/$ARCH_TRIPLET/lib*.so*"
+  - "build/$ARCH_TRIPLET/nghttp2/install/lib/lib*.so*"
+  - "build/$ARCH_TRIPLET/glib-networking/install/lib/$ARCH_TRIPLET/*"
+  - "build/$ARCH_TRIPLET/libsoup/install/lib/$ARCH_TRIPLET/lib*.so*"
+  - "build/$ARCH_TRIPLET/WPEBackend-fdo/install/lib/$ARCH_TRIPLET/libWPEBackend-fdo-1.0.so*"
+  - "build/$ARCH_TRIPLET/libwpe/install/lib/libwpe-1.0.so*"
+  - "build/$ARCH_TRIPLET/wayland/install/lib/$ARCH_TRIPLET/lib*.so*"
+  - "/usr/lib/$ARCH_TRIPLET/libpsl.so*"
+  - "/usr/lib/$ARCH_TRIPLET/libQt5WaylandClient.so*"
+  - "/usr/lib/$ARCH_TRIPLET/qt5/plugins/platforms"
+  - "/usr/lib/$ARCH_TRIPLET/qt5/plugins/wayland-graphics-integration-client"
+  - "/usr/lib/$ARCH_TRIPLET/qt5/plugins/wayland-shell-integration"
 install_qml:
   - "build/$ARCH_TRIPLET/WebKit/install/lib/qt5/qml/*"
 dependencies_target:
-  - libwpebackend-fdo-1.0-dev
-  - libwpe-1.0-dev
+  - libpsl5
+  - libwpebackend-fdo-1.0-1
+  - qtwayland5
 libraries:
-  #WPEBackend:
-  #  make_jobs: 4
-  #  builder: custom
-  #  build: "cd $BUILD_DIR && meson --prefix=/ $SRC_DIR && ninja && env DESTDIR=$INSTALL_DIR ninja install"
-  #  dependencies_host:
-  #    - meson
-  #    - ninja-build
-  #    - pkg-config
-  #    - libepoxy-dev
-  #    - libwayland-bin
-  #    - libwayland-dev
-  #    - libwpe-1.0-dev
+  glib:
+    make_jobs: 4
+    builder: custom
+    build: "cd $BUILD_DIR && meson $SRC_DIR --prefix=$INSTALL_DIR && ninja && ninja install"
+    dependencies_host:
+      - meson
+      - ninja-build
+  nghttp2:
+    make_jobs: 4
+    builder: custom
+    build: "cd $BUILD_DIR && cmake -DCMAKE_INSTALL_PREFIX:PATH=$INSTALL_DIR $SRC_DIR && make -j$(nproc --all) && make install"
+    dependencies_target:
+      - libxml2-dev
+      - libssl-dev
+      - zlib1g-dev
+  glib-networking:
+    make_jobs: 4
+    builder: custom
+    build: "export PKG_CONFIG_PATH=$GLIB_LIB_INSTALL_DIR/lib/$ARCH_TRIPLET/pkgconfig && cd $BUILD_DIR && meson $SRC_DIR --prefix=$INSTALL_DIR && ninja && ninja install"
+    dependencies_host:
+      - meson
+      - ninja-build
+    dependencies_target:
+      - libgnutls28-dev
+  libsoup:
+    make_jobs: 4
+    builder: custom
+    build: "export PKG_CONFIG_PATH=$GLIB_LIB_INSTALL_DIR/lib/$ARCH_TRIPLET/pkgconfig:$NGHTTP2_LIB_INSTALL_DIR/lib/pkgconfig:$GLIB_NETWORKING_LIB_INSTALL_DIR/lib/$ARCH_TRIPLET/pkgconfig && cd $BUILD_DIR && meson $SRC_DIR --prefix=$INSTALL_DIR && ninja && ninja install"
+    dependencies_host:
+      - meson
+      - ninja-build
+    dependencies_target:
+      - libpsl-dev
+  wayland: # Actually cross-built library
+    make_jobs: 4
+    builder: custom
+    build: "pip3 install --user meson && export PATH=$HOME/.local/bin:$PATH && cd $BUILD_DIR && meson $SRC_DIR --prefix=$INSTALL_DIR && ninja && ninja install"
+    dependencies_host:
+      - graphviz
+      - doxygen
+      - xsltproc
+      - xmlto
+      - ninja-build
+      - python3-pip
+      - libexpat-dev
+      - libxml2-dev
+  wayland-scanner: # Scanner-only build for the host, using the same sources as wayland part
+    make_jobs: 4
+    builder: custom
+    build: "pip3 install --user meson && export PATH=$HOME/.local/bin:$PATH && cd $BUILD_DIR && meson $WAYLAND_LIB_SRC_DIR --prefix=$INSTALL_DIR && ninja && ninja install"
+    dependencies_host:
+      - graphviz
+      - doxygen
+      - xsltproc
+      - xmlto
+      - ninja-build
+      - python3-pip
+      - libexpat-dev
+      - libxml2-dev
+  wayland-protocols:
+    make_jobs: 4
+    builder: custom
+    build: "pip3 install --user meson && export PATH=$HOME/.local/bin:$WAYLAND_SCANNER_LIB_INSTALL_DIR/bin:$PATH && cd $BUILD_DIR && export PKG_CONFIG_PATH=$WAYLAND_SCANNER_LIB_INSTALL_DIR/lib/$ARCH_TRIPLET/pkgconfig && meson $SRC_DIR --prefix=$INSTALL_DIR && ninja && ninja install"
+    dependencies_host:
+      - ninja-build
+      - python3-pip
+  libwpe:
+    make_jobs: 4
+    builder: custom
+    build: "export PKG_CONFIG_PATH=$GLIB_LIB_INSTALL_DIR/lib/$ARCH_TRIPLET/pkgconfig && cd $BUILD_DIR && cmake -DCMAKE_INSTALL_PREFIX:PATH=$INSTALL_DIR $SRC_DIR && make -j$(nproc --all) && make install"
+  WPEBackend-fdo:
+    make_jobs: 4
+    builder: custom
+    build: "export PKG_CONFIG_PATH=$LIBWPE_LIB_INSTALL_DIR/lib/pkgconfig:$GLIB_LIB_INSTALL_DIR/lib/$ARCH_TRIPLET/pkgconfig:$WAYLAND_LIB_INSTALL_DIR/lib/$ARCH_TRIPLET/pkgconfig:$WAYLAND_PROTOCOLS_LIB_INSTALL_DIR/share/pkgconfig && cd $BUILD_DIR && meson $SRC_DIR --prefix=$INSTALL_DIR && ninja && ninja install"
+    dependencies_host:
+      - meson
+      - ninja-build
+    dependencies_target:
+      - libepoxy-dev
   WebKit:
     make_jobs: 4
-    builder: cmake
-    build_args: [
-      -DPORT=WPE,
-      -DDEVELOPER_MODE=OFF,
-      -DDEVELOPER_MODE_FATAL_WARNINGS=OFF,
-      -DENABLE_TOUCH_EVENTS=ON,
-      -DENABLE_OVERFLOW_SCROLLING_TOUCH=ON,
-      -DENABLE_PDFJS=ON,
-      -DENABLE_WEBASSEMBLY=ON,
-      -DENABLE_WPE_QT_API=ON,
-      -DENABLE_DOCUMENTATION=OFF,
-      -DUSE_SOUP2=ON,
-      -DUSE_AVIF=OFF,
-      -DUSE_GSTREAMER_TRANSCODER=OFF
-    ]
+    builder: custom
+    build: |
+      export WK_USE_CCACHE=Yes
+      export PATH=$WAYLAND_SCANNER_LIB_INSTALL_DIR/bin:$PATH
+      export PKG_CONFIG_PATH=$GLIB_LIB_INSTALL_DIR/lib/$ARCH_TRIPLET/pkconfig:$LIBWPE_LIB_INSTALL_DIR/lib/pkgconfig:$WAYLAND_PROTOCOLS_LIB_INSTALL_DIR/share/pkgconfig:$WAYLAND_LIB_INSTALL_DIR/lib/$ARCH_TRIPLET/pkgconfig:$LIBSOUP_LIB_INSTALL_DIR/lib/$ARCH_TRIPLET/pkgconfig
+      cd $BUILD_DIR
+      cmake -DCMAKE_INSTALL_PREFIX:PATH=$INSTALL_DIR -DCMAKE_C_COMPILER=/usr/bin/clang-12 -DCMAKE_CXX_COMPILER=/usr/bin/clang++-12 -DCMAKE_BUILD_TYPE=Release -DPORT=WPE -DDEVELOPER_MODE=ON -DDEVELOPER_MODE_FATAL_WARNINGS=OFF -DENABLE_INTROSPECTION=OFF -DENABLE_API_TESTS=OFF -DENABLE_TOOLS=OFF -DENABLE_PDFJS=ON -DENABLE_WEBASSEMBLY=ON -DENABLE_WPE_QT_API=ON -DENABLE_WPE_1_1_API=OFF -DENABLE_SMOOTH_SCROLLING=ON -DENABLE_DOCUMENTATION=OFF -DENABLE_WEB_RTC=OFF -DUSE_SOUP2=OFF -DUSE_SKIA=OFF -DUSE_JPEGXL=OFF -DUSE_LIBBACKTRACE=OFF -DUSE_AVIF=OFF -DUSE_GBM=OFF -DUSE_LIBDRM=OFF -DUSE_GSTREAMER_TRANSCODER=OFF -DUSE_GSTREAMER_WEBRTC=OFF $SRC_DIR
+      make -j$(nproc --all)
+      make install
     dependencies_host:
+      - ccache
+      - clang-12
       - ruby
       - pkg-config
       - unifdef
-      - wayland-protocols
       - libtool
-      - gobject-introspection
       - gperf
     dependencies_target:
+      - libstdc++-10-dev
       - libatk-bridge2.0-dev
       - libcairo2-dev
       - libgbm-dev
       - libgnutls28-dev
       - libharfbuzz-dev
       - libicu-dev
-      - libwpewebkit-1.0-dev
       - libxml2-dev
       - zlib1g-dev
       - libegl-mesa0
@@ -95,10 +167,9 @@ libraries:
       - libsqlite3-dev
       - libsystemd-dev
       - libtasn1-6-dev
-      - libwayland-dev
       - libwebp-dev
       - libwoff-dev
-      - libwpebackend-fdo-1.0-dev
       - libxml2-utils
       - libxslt1-dev
+      - libsoup2.4-dev # Oddly needed for finding the custom build in FindLibSoup.cmake 
       - libgirepository1.0-dev

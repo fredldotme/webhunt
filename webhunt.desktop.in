@@ -5,3 +5,6 @@ Icon=assets/logo.png
 Terminal=false
 Type=Application
 X-Lomiri-Touch=true
+X-Lomiri-Splash-Color=#1E3737
+X-Lomiri-Splash-Image=assets/splash.png
+X-Lomiri-Splash-Show-Header=false

@@ -22,18 +22,31 @@
 #include <QString>
 #include <QQuickView>
 
+#include <glib.h>
+
 int main(int argc, char *argv[])
 {
+    qputenv("QT_QPA_PLATFORM_PLUGIN_PATH", "/opt/click.ubuntu.com/webhunt.fredldotme/current/lib/aarch64-linux-gnu");
     qputenv("QT_QPA_PLATFORM", "wayland-egl");
     qputenv("QT_WAYLAND_DISABLE_WINDOWDECORATION", "1");
-    qputenv("WEBKIT_EXEC_PATH", "/opt/click.ubuntu.com/webhunt.fredldotme/current/lib/aarch64-linux-gnu/wpe-webkit-1.0");
+
+    qputenv("WEBKIT_EXEC_PATH", "/opt/click.ubuntu.com/webhunt.fredldotme/current/lib/aarch64-linux-gnu/wpe-webkit-2.0");
+    qputenv("GIO_EXTRA_MODULES", "/opt/click.ubuntu.com/webhunt.fredldotme/current/lib/aarch64-linux-gnu/gio/modules");
     qputenv("HYBRIS_EGLPLATFORM", "wayland");
+
     qputenv("GST_GL_API", "gles2");
     qputenv("GST_GL_PLATFORM", "egl");
     qputenv("GST_GL_WINDOW", "wayland");
+
+    //qputenv("WAYLAND_DEBUG", "client");
+
+    qputenv("WEBKIT_FORCE_VBLANK_TIMER", "1");
+    //qputenv("WEBKIT_MAX_FRAME_DELAY_MS", "3");
     //qputenv("WEBKIT_GST_CUSTOM_VIDEO_SINK", "hybrissink");
-    qputenv("WEBKIT_GST_USE_PLAYBIN3", "0");
-    //qputenv("WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS", "1");
+    //qputenv("WEBKIT_GST_USE_PLAYBIN3", "0");
+    //qputenv("WEBKIT_WPE_BACKEND", "libWPEBackend-hybris.so");
+    qputenv("WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS", "1");
+    //qputenv("WEBKIT_SHOW_FPS", "1");
 
     if (getenv("GRID_UNIT_PX")) {
         auto scaleFactor = std::atoi(getenv("GRID_UNIT_PX")) / 8.0f;
@@ -43,7 +56,8 @@ int main(int argc, char *argv[])
         qputenv("QT_SCALE_FACTOR", scaleFactorStr.toUtf8());
         qInfo() << "Scaling to " << scaleFactorStr << "x";
     }
-    //qputenv("QT_SCREEN_SCALE_FACTOR", "3");
+
+    g_set_prgname("webhunt.fredldotme");
 
     QGuiApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
     QGuiApplication *app = new QGuiApplication(argc, (char**)argv);
