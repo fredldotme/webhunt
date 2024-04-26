@@ -18,7 +18,7 @@
 	url = https://github.com/WebPlatformForEmbedded/libwpe.git
 [submodule "libs/WPEBackend-fdo"]
 	path = libs/WPEBackend-fdo
-	url = https://github.com/Igalia/WPEBackend-fdo.git
+	url = https://github.com/fredldotme/WPEBackend-fdo.git
 [submodule "libs/wayland-protocols"]
 	path = libs/wayland-protocols
 	url = https://gitlab.freedesktop.org/wayland/wayland-protocols.git

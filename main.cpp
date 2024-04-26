@@ -24,6 +24,8 @@
 
 #include <glib.h>
 
+#include "src/tabs-model.h"
+
 int main(int argc, char *argv[])
 {
     qputenv("QT_QPA_PLATFORM_PLUGIN_PATH", "/opt/click.ubuntu.com/webhunt.fredldotme/current/lib/aarch64-linux-gnu");
@@ -41,7 +43,6 @@ int main(int argc, char *argv[])
     //qputenv("WAYLAND_DEBUG", "client");
 
     qputenv("WEBKIT_FORCE_VBLANK_TIMER", "1");
-    //qputenv("WEBKIT_MAX_FRAME_DELAY_MS", "3");
     //qputenv("WEBKIT_GST_CUSTOM_VIDEO_SINK", "hybrissink");
     //qputenv("WEBKIT_GST_USE_PLAYBIN3", "0");
     //qputenv("WEBKIT_WPE_BACKEND", "libWPEBackend-hybris.so");
@@ -56,6 +57,8 @@ int main(int argc, char *argv[])
         qputenv("QT_SCALE_FACTOR", scaleFactorStr.toUtf8());
         qInfo() << "Scaling to " << scaleFactorStr << "x";
     }
+
+    qmlRegisterType<TabsModel>("WebHunt", 1, 0, "TabsModel");
 
     g_set_prgname("webhunt.fredldotme");
 

@@ -21,6 +21,7 @@ import QtQuick.Window 2.12
 import QtGraphicalEffects 1.0
 import Qt.labs.settings 1.0
 
+import WebHunt 1.0
 import org.wpewebkit.qtwpe 1.0
 
 MainView {
@@ -38,6 +39,29 @@ MainView {
         id: rootPage
         header: Item {}
         anchors.fill: parent
+
+        QtObject {
+            id: browserState
+
+            property QtObject __newTabTemplate : QtObject {
+                property string url: ""
+                property string title: ""
+                property string icon: ""
+            }
+
+            function addTab(url, newViewRequest) {
+                __newTabTemplate.url = url
+                browserState.tabsModel.add(__newTabTemplate)
+                return __newTabTemplate
+            }
+
+            property TabsModel tabsModel: TabsModel {}
+        }
+
+        Component.onCompleted: {
+            if (browserState.tabsModel.count === 0)
+                browserState.addTab("https://duckduckgo.com/")
+        }
 
         Item {
             id: webViewContainer
@@ -59,7 +83,7 @@ MainView {
                 id: webView
                 url: "https://duckduckgo.com"
                 width: parent.width
-                height: parent.height - bottomContainer.height
+                height: parent.height - urlBarContainer.height
                 onUrlChanged: urlField.text = webView.url
             }
         }
@@ -79,6 +103,7 @@ MainView {
             source: effectSource
             radius: units.gu(4)
             opacity: bottomContainer.opacity
+            visible: opacity > 0.0
         }
 
         Rectangle {
@@ -107,7 +132,7 @@ MainView {
                 height: units.gu(0.5)
                 visible: webView.loading
             }
-            
+
             // Bottom edge container
             Item {
                 id: urlBarContainer
@@ -191,6 +216,9 @@ MainView {
                         Behavior on scale {
                             LomiriNumberAnimation { duration: LomiriAnimation.SnapDuration }
                         }
+                        onClicked: {
+                            browserState.addTab("https://duckduckgo.com/")
+                        }
                     }
                 }
             }
@@ -241,7 +269,7 @@ MainView {
                     cellWidth: tabsGrid.width / 2
                     cellHeight: units.gu(40)
 
-                    model: 7
+                    model: browserState.tabsModel
                     delegate: Item {
                         width: tabsGrid.cellWidth
                         height: tabsGrid.cellHeight
