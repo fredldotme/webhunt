@@ -25,3 +25,9 @@
 [submodule "libs/wayland"]
 	path = libs/wayland
 	url = https://gitlab.freedesktop.org/wayland/wayland.git
+[submodule "libs/openssl"]
+	path = libs/openssl
+	url = https://github.com/openssl/openssl.git
+[submodule "libs/wpewebkit-qt"]
+	path = libs/wpewebkit-qt
+	url = https://github.com/fredldotme/wpewebkit-qt.git
