@@ -26,28 +26,43 @@
 
 #include "src/tabs-model.h"
 
+#define APP_ID "webhunt.fredldotme"
+
+#if defined(__aarch64__)
+#define ARCH_TRIPLET "aarch64-linux-gnu"
+#elif defined(__arm__)
+#define ARCH_TRIPLET "arm-linux-gnueabihf"
+#elif defined(__x86_64__)
+#define ARCH_TRIPLET "x86_64-linux-gnu"
+#elif defined(__i386__)
+#define ARCH_TRIPLET "i386-linux-gnu"
+#else
+#error "No supported architecture detected"
+#endif
+
 int main(int argc, char *argv[])
 {
-    qputenv("QT_QPA_PLATFORM_PLUGIN_PATH", "/opt/click.ubuntu.com/webhunt.fredldotme/current/lib/aarch64-linux-gnu");
+    const QString xdgCachePath = QString::fromUtf8(qgetenv("XDG_CACHE_HOME"));
+    const QString cachePath = QStringLiteral("%1/%2").arg(xdgCachePath, APP_ID);
+
+    qputenv("QT_QPA_PLATFORM_PLUGIN_PATH", "/opt/click.ubuntu.com/" APP_ID "/current/lib/" ARCH_TRIPLET);
     qputenv("QT_QPA_PLATFORM", "wayland-egl");
     qputenv("QT_WAYLAND_DISABLE_WINDOWDECORATION", "1");
 
-    qputenv("WEBKIT_EXEC_PATH", "/opt/click.ubuntu.com/webhunt.fredldotme/current/lib/aarch64-linux-gnu/wpe-webkit-2.0");
-    qputenv("GIO_EXTRA_MODULES", "/opt/click.ubuntu.com/webhunt.fredldotme/current/lib/aarch64-linux-gnu/gio/modules");
+    qputenv("WEBKIT_EXEC_PATH", "/opt/click.ubuntu.com/" APP_ID "/current/lib/" ARCH_TRIPLET "/wpe-webkit-2.0");
+    qputenv("GIO_EXTRA_MODULES", "/opt/click.ubuntu.com/" APP_ID "/current/lib/" ARCH_TRIPLET "/gio/modules");
     qputenv("HYBRIS_EGLPLATFORM", "wayland");
 
     qputenv("GST_GL_API", "gles2");
     qputenv("GST_GL_PLATFORM", "egl");
     qputenv("GST_GL_WINDOW", "wayland");
 
-    //qputenv("WAYLAND_DEBUG", "client");
-
     qputenv("WEBKIT_FORCE_VBLANK_TIMER", "1");
-    //qputenv("WEBKIT_GST_CUSTOM_VIDEO_SINK", "hybrissink");
-    //qputenv("WEBKIT_GST_USE_PLAYBIN3", "0");
-    //qputenv("WEBKIT_WPE_BACKEND", "libWPEBackend-hybris.so");
-    qputenv("WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS", "1");
-    //qputenv("WEBKIT_SHOW_FPS", "1");
+    qputenv("WEBKIT_GST_CUSTOM_VIDEO_SINK", "hybrissink");
+    //qputenv("GST_DEBUG", "*hybris*:7,*mir*:7");
+    qputenv("WEBKIT_GST_USE_PLAYBIN3", "0");
+
+    qputenv("WPE_SHELL_MEDIA_DISK_CACHE_PATH", cachePath.toUtf8());
 
     if (getenv("GRID_UNIT_PX")) {
         auto scaleFactor = std::atoi(getenv("GRID_UNIT_PX")) / 8.0f;
@@ -60,11 +75,11 @@ int main(int argc, char *argv[])
 
     qmlRegisterType<TabsModel>("WebHunt", 1, 0, "TabsModel");
 
-    g_set_prgname("webhunt.fredldotme");
+    g_set_prgname(APP_ID);
 
     QGuiApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
     QGuiApplication *app = new QGuiApplication(argc, (char**)argv);
-    app->setApplicationName("webhunt.fredldotme");
+    app->setApplicationName(APP_ID);
 
     qDebug() << "Starting app from main.cpp";
 

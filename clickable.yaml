@@ -7,6 +7,7 @@ install_lib:
   - "build/$ARCH_TRIPLET/WebKit/install/libexec/*"
   - "build/$ARCH_TRIPLET/WebKit/install/lib/wpe-webkit-2.0/*"
   - "build/$ARCH_TRIPLET/glib/install/lib/$ARCH_TRIPLET/lib*.so*"
+  - "build/$ARCH_TRIPLET/openssl/install/lib/lib*.so*"
   - "build/$ARCH_TRIPLET/nghttp2/install/lib/lib*.so*"
   - "build/$ARCH_TRIPLET/glib-networking/install/lib/$ARCH_TRIPLET/*"
   - "build/$ARCH_TRIPLET/libsoup/install/lib/$ARCH_TRIPLET/lib*.so*"
@@ -20,7 +21,7 @@ install_lib:
   - "/usr/lib/$ARCH_TRIPLET/qt5/plugins/wayland-shell-integration"
 
 install_qml:
-  - "build/$ARCH_TRIPLET/WebKit/install/lib/qt5/qml/*"
+  - "build/$ARCH_TRIPLET/wpewebkit-qt/install/lib/qt/qml/*"
 
 dependencies_target:
   - libpsl5
@@ -35,13 +36,17 @@ libraries:
       - meson
       - ninja-build
 
+  openssl:
+    make_jobs: 4
+    builder: custom
+    build: "cd $SRC_DIR && ./Configure --prefix=$INSTALL_DIR && make -j$NUM_PROCS && make install"
+
   nghttp2:
     make_jobs: 4
     builder: custom
-    build: "cd $BUILD_DIR && cmake -DCMAKE_INSTALL_PREFIX:PATH=$INSTALL_DIR $SRC_DIR && make -j$(nproc --all) && make install"
+    build: "export PKG_CONFIG_PATH=$OPENSSL_LIB_INSTALL_DIR/lib/pkgconfig && cd $BUILD_DIR && cmake -DCMAKE_INSTALL_PREFIX:PATH=$INSTALL_DIR $SRC_DIR && make -j$NUM_PROCS && make install"
     dependencies_target:
       - libxml2-dev
-      - libssl-dev
       - zlib1g-dev
 
   glib-networking:
@@ -103,7 +108,7 @@ libraries:
   libwpe:
     make_jobs: 4
     builder: custom
-    build: "export PKG_CONFIG_PATH=$GLIB_LIB_INSTALL_DIR/lib/$ARCH_TRIPLET/pkgconfig && cd $BUILD_DIR && cmake -DCMAKE_INSTALL_PREFIX:PATH=$INSTALL_DIR $SRC_DIR && make -j$(nproc --all) && make install"
+    build: "export PKG_CONFIG_PATH=$GLIB_LIB_INSTALL_DIR/lib/$ARCH_TRIPLET/pkgconfig && cd $BUILD_DIR && cmake -DCMAKE_INSTALL_PREFIX:PATH=$INSTALL_DIR $SRC_DIR && make -j$NUM_PROCS && make install"
 
   WPEBackend-fdo:
     make_jobs: 4
@@ -126,7 +131,7 @@ libraries:
       export PATH=$WAYLAND_SCANNER_LIB_INSTALL_DIR/bin:$PATH
       export PKG_CONFIG_PATH=$GLIB_LIB_INSTALL_DIR/lib/$ARCH_TRIPLET/pkconfig:$LIBWPE_LIB_INSTALL_DIR/lib/pkgconfig:$WAYLAND_PROTOCOLS_LIB_INSTALL_DIR/share/pkgconfig:$WAYLAND_LIB_INSTALL_DIR/lib/$ARCH_TRIPLET/pkgconfig:$LIBSOUP_LIB_INSTALL_DIR/lib/$ARCH_TRIPLET/pkgconfig
       cd $BUILD_DIR
-      cmake -DCMAKE_INSTALL_PREFIX:PATH=$INSTALL_DIR -DCMAKE_C_COMPILER=/usr/bin/clang-12 -DCMAKE_CXX_COMPILER=/usr/bin/clang++-12 -DCMAKE_BUILD_TYPE=Release -DPORT=WPE -DDEVELOPER_MODE=ON -DDEVELOPER_MODE_FATAL_WARNINGS=OFF -DENABLE_INTROSPECTION=OFF -DENABLE_API_TESTS=OFF -DENABLE_TOOLS=OFF -DENABLE_PDFJS=ON -DENABLE_WEBASSEMBLY=ON -DENABLE_WPE_QT_API=ON -DENABLE_WPE_1_1_API=OFF -DENABLE_SMOOTH_SCROLLING=ON -DENABLE_DOCUMENTATION=OFF -DENABLE_WEB_RTC=OFF -DUSE_SOUP2=OFF -DUSE_SKIA=OFF -DUSE_JPEGXL=OFF -DUSE_LIBBACKTRACE=OFF -DUSE_AVIF=OFF -DUSE_GBM=OFF -DUSE_LIBDRM=OFF -DUSE_GSTREAMER_TRANSCODER=OFF -DUSE_GSTREAMER_WEBRTC=OFF $SRC_DIR
+      cmake -DCMAKE_INSTALL_PREFIX:PATH=$INSTALL_DIR -DCMAKE_C_COMPILER=/usr/bin/clang-12 -DCMAKE_CXX_COMPILER=/usr/bin/clang++-12 -DCMAKE_BUILD_TYPE=Release -DPORT=WPE -DDEVELOPER_MODE=ON -DDEVELOPER_MODE_FATAL_WARNINGS=OFF -DENABLE_INTROSPECTION=OFF -DENABLE_API_TESTS=OFF -DENABLE_TOOLS=OFF -DENABLE_PDFJS=ON -DENABLE_WEBASSEMBLY=ON -DENABLE_WPE_QT_API=OFF -DENABLE_WPE_1_1_API=OFF -DENABLE_SMOOTH_SCROLLING=ON -DENABLE_KINETIC_SCROLLING=ON -DENABLE_TOUCH_EVENTS=ON -DENABLE_PLUGIN_PROCESS=OFF -DENABLE_DOCUMENTATION=OFF -DENABLE_WEB_RTC=ON -DENABLE_BUBBLEWRAP_SANDBOX=OFF -DENABLE_CONTEXT_MENUS=ON -DENABLE_EXPERIMENTAL_FEATURES=ON -DENABLE_WEBXR=OFF -DENABLE_THUNDER=OFF -DUSE_SOUP2=OFF -DUSE_SKIA=OFF -DUSE_JPEGXL=OFF -DUSE_LIBBACKTRACE=OFF -DUSE_AVIF=OFF -DUSE_GBM=OFF -DUSE_LIBDRM=OFF -DUSE_GSTREAMER_TRANSCODER=OFF -DUSE_GSTREAMER_WEBRTC=ON -DOPENSSL_ROOT_DIR=$OPENSSL_LIB_INSTALL_DIR $SRC_DIR
       make -j$NUM_PROCS
       make install
       exit 0
@@ -138,6 +143,7 @@ libraries:
       - unifdef
       - libtool
       - gperf
+      - libfile-copy-recursive-perl
     dependencies_target:
       - libstdc++-10-dev
       - libatk-bridge2.0-dev
@@ -148,6 +154,7 @@ libraries:
       - libicu-dev
       - libxml2-dev
       - zlib1g-dev
+      - flite1-dev
       - libegl-mesa0
       - libluajit-5.1-dev
       - libmount-dev
@@ -170,7 +177,6 @@ libraries:
       - libenchant-2-dev
       - libepoxy-dev
       - libevent-dev
-      - libfile-copy-recursive-perl
       - libgstreamer1.0-dev
       - libgstreamer-plugins-bad1.0-dev
       - libgstreamer-plugins-base1.0-dev
@@ -189,3 +195,20 @@ libraries:
       - libxslt1-dev
       - libsoup2.4-dev # Oddly needed for finding the custom build in FindLibSoup.cmake 
       - libgirepository1.0-dev
+
+  wpewebkit-qt:
+    make_jobs: 4
+    builder: custom
+    build: |
+      export PKG_CONFIG_PATH=$WEBKIT_LIB_INSTALL_DIR/lib/pkgconfig:$LIBSOUP_LIB_INSTALL_DIR/lib/$ARCH_TRIPLET/pkgconfig
+      cd $BUILD_DIR
+      cmake -DCMAKE_INSTALL_PREFIX:PATH=$INSTALL_DIR -DCMAKE_BUILD_TYPE=Release -DUSE_QT6=OFF $SRC_DIR
+      make -j$NUM_PROCS
+      make install
+      exit 0
+    dependencies_host:
+      - pkg-config
+    dependencies_target:
+      - libpsl-dev
+      - libepoxy-dev
+      - libgbm-dev
