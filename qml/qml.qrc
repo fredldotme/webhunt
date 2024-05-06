@@ -2,5 +2,7 @@
     <qresource prefix="/">
         <file>Main.qml</file>
         <file>UrlBar.qml</file>
+        <file>MimiButton.qml</file>
+        <file>MimiFilePicker.qml</file>
     </qresource>
 </RCC>

@@ -22,7 +22,7 @@ import Lomiri.Components.Popups 1.3
 
 import QtQuick.Layouts 1.3
 import QtQuick.Window 2.12
-import QtGraphicalEffects 1.0
+import QtGraphicalEffects 1.12
 import Qt.labs.settings 1.0
 
 import WebHunt 1.0
@@ -89,6 +89,26 @@ MainView {
                 width: parent.width
                 height: parent.height - urlBarContainer.height
                 onUrlChanged: urlField.text = webView.url
+                readonly property color invertedThemeColor: Qt.rgba(1.0 - themeColor.r,
+                                                                    1.0 - themeColor.g,
+                                                                    1.0 - themeColor.b,
+                                                                    themeColor.a)
+                onFileSelectionRequested: {
+                    filePicker.multiple = multiple
+                    filePicker.open()
+                }
+            }
+
+            MimiFilePicker {
+                id: filePicker
+                anchors.fill: parent
+
+                onAccepted: {
+                    webView.confirmFileSelection(filePicker.fileUrls)
+                }
+                onCanceled: {
+                    webView.cancelFileSelection()
+                }
             }
         }
 
@@ -107,7 +127,7 @@ MainView {
             source: effectSource
             radius: units.gu(4)
             opacity: bottomContainer.opacity
-            visible: opacity > 0.0
+            visible: opacity > 0.0 && bottomContainer.anchors.bottomMargin > 0.0
         }
 
         Column {
@@ -122,7 +142,6 @@ MainView {
             opacity: 1.0 - bottomEdge.dragProgress
 
             ProgressBar {
-                id: determinateBar
                 minimumValue: 0.0
                 maximumValue: 1.0
                 value: webView.loadProgress / 100.0
@@ -157,20 +176,22 @@ MainView {
                             verticalCenter: parent.verticalCenter
                         }
                         width: implicitWidth
-                        height: implicitHeight
+                        height: parent.height
                         visible: !urlField.entryFocus
 
                         Behavior on width {
                             LomiriNumberAnimation { duration: LomiriAnimation.FastDuration }
                         }
 
-                        Button {
-                            color: "transparent"
+                        MimiButton {
                             iconName: "go-previous"
+                            iconColor: webView.invertedThemeColor
                             scale: !pressed ? 1.0 : 0.8
 
                             readonly property bool visibility: webView.canGoBack
+                            y: units.gu(1)
                             width: visibility ? units.gu(4) : 0
+                            height: parent.height - units.gu(2)
                             opacity: visibility ? 1.0 : 0.0
                             visible: width > 0
 
@@ -185,13 +206,15 @@ MainView {
                             }
                             onClicked: webView.goBack()
                         }
-                        Button {
-                            color: "transparent"
+                        MimiButton {
                             iconName: "go-next"
+                            iconColor: webView.invertedThemeColor
                             scale: !pressed ? 1.0 : 0.8
                             
                             readonly property bool visibility: webView.canGoForward
+                            y: units.gu(1)
                             width: visibility ? units.gu(4) : 0
+                            height: parent.height - units.gu(2)
                             opacity: visibility ? 1.0 : 0.0
                             visible: width > 0
 
@@ -211,12 +234,13 @@ MainView {
                     UrlBar {
                         id: urlField
 
-                        margins: units.gu(0.7)
+                        margins: units.gu(0.9)
                         anchors.margins: units.gu(1)
                         anchors.centerIn: parent
                         width: entryFocus ? parent.width - units.gu(4) : Math.min((parent.width / 3) * 2, parent.width - (navigationRow.width * 2) - (newTabButton.width * 2))
                         height: parent.height
                         placeholderText: webView.title !== "" ? webView.title : qsTr("Loading...")
+                        placeholderColor: webView.invertedThemeColor
 
                         onFocusChanged: {
                             urlField.text = webView.url
@@ -235,17 +259,19 @@ MainView {
                         }
                     }
 
-                    Button {
+                    MimiButton {
                         id: newTabButton
                         anchors {
                             right: parent.right
                             rightMargin: units.gu(2)
                             verticalCenter: parent.verticalCenter
                         }
+                        y: units.gu(1)
+                        height: parent.height - units.gu(2)
                         width: height
                         visible: !urlField.entryFocus
-                        color: "transparent"
                         iconName: "add"
+                        iconColor: webView.invertedThemeColor
                         scale: !pressed ? 1.0 : 0.8
                         Behavior on scale {
                             LomiriNumberAnimation { duration: LomiriAnimation.SnapDuration }
@@ -305,22 +331,6 @@ MainView {
                 width: bottomEdge.width
                 height: bottomEdge.height
 
-                /*ShaderEffectSource {
-                    id: bottomEdgeEffectSource
-                    sourceItem: webViewContainer
-                    anchors.centerIn: bottomEdgeContainer
-                    width: bottomEdgeContainer.width
-                    height: bottomEdgeContainer.height
-                    sourceRect: Qt.rect(0, webViewContainer.height - (bottomEdge.height * bottomEdge.dragProgress), width, height)
-                }
-
-                FastBlur {
-                    id: blur
-                    anchors.fill: bottomEdgeEffectSource
-                    source: bottomEdgeEffectSource
-                    radius: units.gu(4)
-                }*/
-
                 Rectangle {
                     anchors.fill: bottomEdgeContainer
                     opacity: 0.7
@@ -334,18 +344,39 @@ MainView {
                     readonly property int spacing : units.gu(2)
                     clip: true
 
-                    cellWidth: tabsGrid.width / 2
-                    cellHeight: units.gu(40)
+                    readonly property bool portrait : webView.height > webView.width
+                    readonly property int __cellWidth : portrait ? (webView.width / 2) : (webView.height / 2)
+                    readonly property int __cellHeight : portrait ? (webView.height / 2) : (webView.width / 2)
+
+                    cellWidth: __cellWidth - (spacing / 2)
+                    cellHeight: __cellHeight - (spacing / 2)
 
                     model: browserState.tabsModel
                     delegate: Item {
                         width: tabsGrid.cellWidth
                         height: tabsGrid.cellHeight
+
                         LomiriShape {
+                            id: tabPreviewShape
                             anchors.fill: parent
                             anchors.margins: tabsGrid.spacing
                             radius: units.gu(2)
-                            backgroundColor: "green"
+                            backgroundColor: "transparent"
+                            visible: false
+                            source: ShaderEffectSource {
+                                sourceItem: webView
+                                anchors.fill: parent
+                                sourceRect: Qt.rect(0, 0, webView.width, webView.height)
+                            }
+                            sourceFillMode: LomiriShape.Stretch
+                        }
+
+                        DropShadow {
+                            anchors.fill: tabPreviewShape
+                            horizontalOffset: 0
+                            verticalOffset: 0
+                            radius: units.gu(0.5)
+                            source: tabPreviewShape
                             scale: !tabsGridCellMouseArea.pressed ? 1.0 : 0.9
                             Behavior on scale {
                                 LomiriNumberAnimation { duration: LomiriAnimation.SnapDuration }

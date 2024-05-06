@@ -24,6 +24,7 @@ Item {
     property alias text: urlField.text
     property alias entryFocus: urlField.focus
     property alias placeholderText: titleButton.text
+    property alias placeholderColor: titleButton.color
 
     signal focusChanged()
     signal accepted()
