@@ -1,0 +1,9 @@
+{
+    "destination": [
+        "pictures",
+        "videos",
+        "documents",
+        "music",
+        "text"
+    ]
+}

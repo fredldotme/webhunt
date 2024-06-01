@@ -5,7 +5,7 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; version 3.
  *
- * webhunt is distributed in the hope that it will be useful,
+ * Mimi Browser is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -24,6 +24,7 @@
 
 #include <glib.h>
 
+#include "src/tab.h"
 #include "src/tabs-model.h"
 
 #define APP_ID "webhunt.fredldotme"
@@ -73,7 +74,8 @@ int main(int argc, char *argv[])
         qInfo() << "Scaling to " << scaleFactorStr << "x";
     }
 
-    qmlRegisterType<TabsModel>("WebHunt", 1, 0, "TabsModel");
+    qmlRegisterType<MimiTab>("WebHunt", 1, 0, "MimiTab");
+    qmlRegisterType<TabsModel>("WebHunt", 1, 0, "MimiTabsModel");
 
     g_set_prgname(APP_ID);
 

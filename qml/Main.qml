@@ -5,7 +5,7 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; version 3.
  *
- * webhunt is distributed in the hope that it will be useful,
+ * Mimi Browser is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -19,7 +19,9 @@ import QtQuick 2.12
 import Lomiri.Components 1.3
 import Lomiri.Components.ListItems 1.3 as ListItems
 import Lomiri.Components.Popups 1.3
+import Lomiri.Components.Themes 1.3
 
+import QtQuick.Controls 2.12 as QQC2
 import QtQuick.Layouts 1.3
 import QtQuick.Window 2.12
 import QtGraphicalEffects 1.12
@@ -37,7 +39,9 @@ MainView {
     width: units.gu(45)
     height: units.gu(75)
 
-    readonly property int oskMargin : !Qt.inputMethod.visible ? 0 : (Qt.inputMethod.keyboardRectangle.height / Screen.devicePixelRatio)
+    readonly property int oskMargin : !Qt.inputMethod.visible
+                                      ? 0
+                                      : (Qt.inputMethod.keyboardRectangle.height / Screen.devicePixelRatio)
 
     Page {
         id: rootPage
@@ -47,29 +51,50 @@ MainView {
         QtObject {
             id: browserState
 
-            property QtObject __newTabTemplate : QtObject {
-                property string url: ""
-                property string title: ""
-                property string icon: ""
-            }
+            property MimiTab __newTabTemplate : MimiTab {}
 
             function addTab(url, newViewRequest) {
                 __newTabTemplate.url = url
-                browserState.tabsModel.add(__newTabTemplate)
+                if (tabsModel.count > 0) {
+                    takeSnapshot(function() {
+                        browserState.tabsModel.add(__newTabTemplate)
+                        browserState.currentTabIndex = (tabsModel.count - 1)
+                    })
+                } else {
+                    browserState.tabsModel.add(__newTabTemplate)
+                    browserState.currentTabIndex = (tabsModel.count - 1)
+                }
                 return __newTabTemplate
             }
 
-            property TabsModel tabsModel: TabsModel {}
+            function takeSnapshot(callback) {
+                webViewContainer.currentWebView.grabToImage(function(result) {
+                    bottomEdge.tabsGrid.currentItem.tabSnapshot.source = result.url
+                    callback()
+                })
+            }
+
+            property MimiTabsModel tabsModel : MimiTabsModel {}
+            property int currentTabIndex : 0
         }
 
         Component.onCompleted: {
+            browserState.tabsModel.load()
             if (browserState.tabsModel.count === 0)
                 browserState.addTab("https://duckduckgo.com/")
         }
 
+        Connections {
+            target: Qt.application
+            onAboutToQuit: {
+                browserState.tabsModel.save()
+            }
+        }
+
         Item {
             id: webViewContainer
-            anchors.fill: parent
+            width: parent.width
+            height: parent.height - urlBarContainer.height
             // readonly property real visibilityAndScale: bottomEdge.dragProgress < (units.gu(4) / root.height) ? 1.0 : (1.0 - bottomEdge.dragProgress)
             readonly property real visibilityAndScale: 1.0
             scale: visibilityAndScale == 1.0 ? 1.0 : Math.min(visibilityAndScale * 3, 1.0)
@@ -82,32 +107,70 @@ MainView {
                 LomiriNumberAnimation { duration: 100 }
             }
 
-            // Web content view
-            WPEView {
-                id: webView
-                url: "https://duckduckgo.com/"
+            property var currentWebView: webViewContainerSwipeView.contentItem.children[webViewContainerSwipeView.currentIndex]
+            readonly property bool fullscreen: currentWebView !== null ? currentWebView.fullscreen : false
+
+            Flickable {
+                id: webViewContainerSwipeView
+                //onCurrentIndexChanged: console.log("currentIndex now: " + currentIndex)
+                interactive: false
+                flickableDirection: Flickable.HorizontalFlick
                 width: parent.width
-                height: parent.height - urlBarContainer.height
-                onUrlChanged: urlField.text = webView.url
-                readonly property color invertedThemeColor: Qt.rgba(1.0 - themeColor.r,
-                                                                    1.0 - themeColor.g,
-                                                                    1.0 - themeColor.b,
-                                                                    themeColor.a)
-                onFileSelectionRequested: {
-                    filePicker.multiple = multiple
-                    filePicker.open()
-                }
-            }
+                height: parent.height
 
-            MimiFilePicker {
-                id: filePicker
-                anchors.fill: parent
-
-                onAccepted: {
-                    webView.confirmFileSelection(filePicker.fileUrls)
+                property int currentIndex: 0
+                
+                Connections {
+                    target: webViewContainerSwipeView.contentItem
+                    onXChanged: {
+                        let i = 0
+                        let distance = 0
+                        while (true) {
+                            if (distance < Math.abs(webViewContainerSwipeView.contentItem.x)) {
+                                distance += webViewContainerSwipeView.width
+                                ++i
+                            } else {
+                                break
+                            }
+                        }
+                        webViewContainerSwipeView.currentIndex = i
+                    }
                 }
-                onCanceled: {
-                    webView.cancelFileSelection()
+
+                Repeater {
+                    // Web content view
+                    model: browserState.tabsModel
+
+                    WPEView {
+                        id: webView
+                        url: browserState.tabsModel.currentTab.url
+                        width: webViewContainerSwipeView.width
+                        height: webViewContainerSwipeView.height
+                        onUrlChanged: urlField.text = webView.url
+                        readonly property color invertedThemeColor: Qt.rgba(1.0 - themeColor.r,
+                                                                            1.0 - themeColor.g,
+                                                                            1.0 - themeColor.b,
+                                                                            themeColor.a)
+
+                        property bool fullscreen : false
+                        property alias filePicker : filePicker
+
+                        onFileSelectionRequested: {
+                            filePicker.open(multiple, mimeTypes)
+                        }
+
+                        MimiFilePicker {
+                            id: filePicker
+                            anchors.fill: parent
+
+                            onAccepted: {
+                                webView.confirmFileSelection(filePicker.fileUrls)
+                            }
+                            onCanceled: {
+                                webView.cancelFileSelection()
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -136,18 +199,25 @@ MainView {
                 left: parent.left
                 right: parent.right
                 bottom: parent.bottom
-                bottomMargin: root.oskMargin + (bottomEdge.height * bottomEdge.dragProgress)
+                bottomMargin: bottomContainer.hidden ? -height : root.oskMargin + (bottomEdge.height * bottomEdge.dragProgress)
+                
+                Behavior on bottomMargin {
+                    LomiriNumberAnimation { duration: LomiriAnimation.SnapDuration }
+                }
             }
             height: implicitHeight
             opacity: 1.0 - bottomEdge.dragProgress
 
+            readonly property bool hidden :
+                webViewContainer.currentWebView.fullscreen || webViewContainer.currentWebView.filePicker.visible
+
             ProgressBar {
                 minimumValue: 0.0
                 maximumValue: 1.0
-                value: webView.loadProgress / 100.0
+                value: webViewContainer.currentWebView.loadProgress / 100.0
                 width: parent.width
                 height: units.gu(0.5)
-                visible: webView.loading
+                visible: webViewContainer.currentWebView.loading
             }
 
             // Bottom edge container
@@ -158,7 +228,7 @@ MainView {
 
                 Rectangle {
                     anchors.fill: parent
-                    color: webView.themeColor
+                    color: webViewContainer.currentWebView.themeColor
                     opacity: 0.7
                     Behavior on color {
                         ColorAnimation { duration: LomiriAnimation.SnapDuration }
@@ -185,10 +255,10 @@ MainView {
 
                         MimiButton {
                             iconName: "go-previous"
-                            iconColor: webView.invertedThemeColor
+                            iconColor: webViewContainer.currentWebView.invertedThemeColor
                             scale: !pressed ? 1.0 : 0.8
 
-                            readonly property bool visibility: webView.canGoBack
+                            readonly property bool visibility: webViewContainer.currentWebView.canGoBack
                             y: units.gu(1)
                             width: visibility ? units.gu(4) : 0
                             height: parent.height - units.gu(2)
@@ -204,14 +274,18 @@ MainView {
                             Behavior on opacity {
                                 LomiriNumberAnimation { duration: LomiriAnimation.FastDuration }
                             }
-                            onClicked: webView.goBack()
+                            onClicked: {
+                                if (webViewContainer.currentWebView.loading)
+                                    webViewContainer.currentWebView.stop()
+                                webViewContainer.currentWebView.goBack()
+                            }
                         }
                         MimiButton {
                             iconName: "go-next"
-                            iconColor: webView.invertedThemeColor
+                            iconColor: webViewContainer.currentWebView.invertedThemeColor
                             scale: !pressed ? 1.0 : 0.8
                             
-                            readonly property bool visibility: webView.canGoForward
+                            readonly property bool visibility: webViewContainer.currentWebView.canGoForward
                             y: units.gu(1)
                             width: visibility ? units.gu(4) : 0
                             height: parent.height - units.gu(2)
@@ -227,7 +301,11 @@ MainView {
                             Behavior on opacity {
                                 LomiriNumberAnimation { duration: LomiriAnimation.FastDuration }
                             }
-                            onClicked: webView.goForward()
+                            onClicked: {
+                                if (webViewContainer.currentWebView.loading)
+                                    webViewContainer.currentWebView.stop()
+                                webViewContainer.currentWebView.goForward()
+                            }
                         }
                     }
 
@@ -239,11 +317,10 @@ MainView {
                         anchors.centerIn: parent
                         width: entryFocus ? parent.width - units.gu(4) : Math.min((parent.width / 3) * 2, parent.width - (navigationRow.width * 2) - (newTabButton.width * 2))
                         height: parent.height
-                        placeholderText: webView.title !== "" ? webView.title : qsTr("Loading...")
-                        placeholderColor: webView.invertedThemeColor
-
+                        placeholderText: webViewContainer.currentWebView.title !== "" ? webViewContainer.currentWebView.title : qsTr("Loading...")
+                        placeholderColor: webViewContainer.currentWebView.invertedThemeColor
                         onFocusChanged: {
-                            urlField.text = webView.url
+                            text = webViewContainer.currentWebView.url
                         }
 
                         Behavior on width {
@@ -252,9 +329,9 @@ MainView {
 
                         onAccepted: {
                             if (!(text.startsWith("http://") || text.startsWith("https://") || text.startsWith("webkit://")))
-                                webView.url = "https://" + urlField.text
+                                webViewContainer.currentWebView.url = "https://" + urlField.text
                             else
-                                webView.url = urlField.text
+                                webViewContainer.currentWebView.url = urlField.text
                             entryFocus = false
                         }
                     }
@@ -271,7 +348,7 @@ MainView {
                         width: height
                         visible: !urlField.entryFocus
                         iconName: "add"
-                        iconColor: webView.invertedThemeColor
+                        iconColor: webViewContainer.currentWebView.invertedThemeColor
                         scale: !pressed ? 1.0 : 0.8
                         Behavior on scale {
                             LomiriNumberAnimation { duration: LomiriAnimation.SnapDuration }
@@ -310,6 +387,99 @@ MainView {
                         }*/
                     }
                 }
+                
+                MouseArea {
+                    id: swipeDetectionMouseArea
+                    anchors.fill: parent
+                    propagateComposedEvents: true
+                    enabled: !urlField.focused && bottomEdge.dragProgress == 0.0 && !swipeEndAnimation.running
+                    drag.threshold: 0 // We track on our own and need the startPosX to be exact
+
+                    property bool inUse : false
+                    property int contentItemStartX : 0
+                    property int startPosX : 0
+                    property int endPosX : 0
+                    property int targetPosX : 0
+                    property int __nextTabIndex : 0
+
+                    onPressed: {
+                        contentItemStartX = webViewContainerSwipeView.contentItem.x
+                        startPosX = mouse.x
+                    }
+
+                    onPositionChanged: {
+                        if (!inUse)
+                            inUse = Math.abs(mouse.x - startPosX) > units.gu(4)
+                    
+                        if (!inUse) {
+                            mouse.accepted = false
+                            return
+                        }
+
+                        endPosX = mouse.x
+                        webViewContainerSwipeView.contentItem.x = contentItemStartX + (mouse.x - startPosX)
+                        mouse.accepted = true
+                    }
+
+                    onReleased: {
+                        if (!inUse) {
+                            mouse.accepted = false
+                            return
+                        }
+
+                        const distance = startPosX - endPosX
+                        const isOverBoundary = Math.abs(distance) > (webViewContainerSwipeView.contentItem.width / 4)
+                        const width = webViewContainerSwipeView.contentItem.width
+                        if (isOverBoundary) {
+                            if (distance < 0) {
+                                __nextTabIndex = Math.min(browserState.currentTabIndex + 1, browserState.tabsModel.count - 1)
+                                targetPosX = Math.min(width * (browserState.tabsModel.count - 1), __nextTabIndex * width)
+                            } else {
+                                __nextTabIndex = Math.max(browserState.currentTabIndex - 1, 0)
+                                targetPosX = Math.max(__nextTabIndex * width, 0)
+                            }
+                        } else {
+                            __nextTabIndex = browserState.currentTabIndex
+                            targetPosX = startPosX
+                        }
+
+                        console.log("End Position: " + mouse.x)
+                        endPosX = mouse.x
+                        contentItemStartX = 0
+                        inUse = false
+                        swipeEndAnimation.start()
+                        mouse.accepted = true
+                    }
+
+                    onCanceled: {
+                        if (!inUse) {
+                            return
+                        }
+
+                        targetPosX = startPosX
+                        contentItemStartX = 0
+                        inUse = false
+                        swipeEndAnimation.start()
+                    }
+
+                    Connections {
+                        target: webViewContainerSwipeView.contentItem
+                        onXChanged: {
+                            console.log("webViewContainerSwipeView.contentItem.x: " + webViewContainerSwipeView.contentItem.x)
+                        }
+                    }
+
+                    LomiriNumberAnimation {
+                        id: swipeEndAnimation
+                        target: webViewContainerSwipeView.contentItem
+                        property: "x"
+                        from: swipeDetectionMouseArea.endPosX
+                        to: swipeDetectionMouseArea.targetPosX
+                        onRunningChanged: {
+                            browserState.currentTabIndex = swipeDetectionMouseArea.__nextTabIndex
+                        }
+                    }
+                }
             }
         }
 
@@ -326,6 +496,8 @@ MainView {
             onCollapseStarted: hint.status = BottomEdgeHint.Hidden
             onCollapseCompleted: hint.status = BottomEdgeHint.Hidden
 
+            property var tabsGrid : null
+
             contentComponent: Item {
                 id: bottomEdgeContainer
                 width: bottomEdge.width
@@ -334,7 +506,7 @@ MainView {
                 Rectangle {
                     anchors.fill: bottomEdgeContainer
                     opacity: 0.7
-                    color: webView.themeColor
+                    color: webViewContainer.currentWebView.themeColor
                 }
 
                 GridView {
@@ -344,39 +516,60 @@ MainView {
                     readonly property int spacing : units.gu(2)
                     clip: true
 
-                    readonly property bool portrait : webView.height > webView.width
-                    readonly property int __cellWidth : portrait ? (webView.width / 2) : (webView.height / 2)
-                    readonly property int __cellHeight : portrait ? (webView.height / 2) : (webView.width / 2)
+                    Component.onCompleted: {
+                        bottomEdge.tabsGrid = tabsGrid
+                    }
 
-                    cellWidth: __cellWidth - (spacing / 2)
-                    cellHeight: __cellHeight - (spacing / 2)
+                    readonly property int __cellWidth : webViewContainer.width
+                    readonly property int __cellHeight : webViewContainer.height
+
+                    cellWidth: __cellWidth / 2
+                    cellHeight: __cellHeight / 2
 
                     model: browserState.tabsModel
                     delegate: Item {
                         width: tabsGrid.cellWidth
                         height: tabsGrid.cellHeight
 
+                        property alias tabSnapshot : tabSnapshot
+
                         LomiriShape {
                             id: tabPreviewShape
-                            anchors.fill: parent
-                            anchors.margins: tabsGrid.spacing
+                            width: parent.width - (tabsGrid.spacing * 2)
+                            height: parent.height - (tabsGrid.spacing * 2)
                             radius: units.gu(2)
                             backgroundColor: "transparent"
                             visible: false
                             source: ShaderEffectSource {
-                                sourceItem: webView
+                                sourceItem: webViewContainer
                                 anchors.fill: parent
-                                sourceRect: Qt.rect(0, 0, webView.width, webView.height)
+                                sourceRect: Qt.rect(0, 0, webViewContainer.width, webViewContainer.height)
+                            }
+                            sourceFillMode: LomiriShape.Stretch
+                        }
+
+                        LomiriShape {
+                            width: parent.width - (tabsGrid.spacing * 2)
+                            height: parent.height - (tabsGrid.spacing * 2)
+                            radius: units.gu(2)
+                            backgroundColor: "transparent"
+                            visible: false
+                            source: Image {
+                                id: tabSnapshot
+                                anchors.fill: parent
                             }
                             sourceFillMode: LomiriShape.Stretch
                         }
 
                         DropShadow {
-                            anchors.fill: tabPreviewShape
+                            width: parent.width - (tabsGrid.spacing * 2)
+                            height: parent.height - (tabsGrid.spacing * 2)
+                            anchors.centerIn: parent
                             horizontalOffset: 0
                             verticalOffset: 0
                             radius: units.gu(0.5)
-                            source: tabPreviewShape
+                            color: index === browserState.currentTabIndex ? Theme.palette.highlighted.selection : Theme.palette.normal.base
+                            source: index === browserState.currentTabIndex ? tabPreviewShape : tabSnapshot
                             scale: !tabsGridCellMouseArea.pressed ? 1.0 : 0.9
                             Behavior on scale {
                                 LomiriNumberAnimation { duration: LomiriAnimation.SnapDuration }
@@ -386,7 +579,11 @@ MainView {
                                 id: tabsGridCellMouseArea
                                 anchors.fill: parent
                                 onClicked: {
-                                    bottomEdge.collapse()
+                                    browserState.takeSnapshot(function () {
+                                        browserState.currentTabIndex = index
+                                        tabsGrid.currentIndex = index
+                                        bottomEdge.collapse()
+                                    })
                                 }
                             }
                         }

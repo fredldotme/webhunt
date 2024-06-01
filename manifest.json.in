@@ -6,7 +6,8 @@
     "hooks": {
         "webhunt": {
             "apparmor": "webhunt.apparmor",
-            "desktop":  "webhunt.desktop"
+            "desktop":  "webhunt.desktop",
+            "content-hub": "webhunt.content-hub"
         }
     },
     "version": "0.0.1",

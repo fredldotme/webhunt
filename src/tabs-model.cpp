@@ -18,10 +18,14 @@
 
 #include "tabs-model.h"
 
-// Qt
-#include <QtCore/QDebug>
-#include <QtCore/QObject>
-#include <QtCore/QtGlobal>
+#include <QCoreApplication>
+#include <QDebug>
+#include <QFile>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QObject>
+#include <QtGlobal>
 
 /*!
     \class TabsModel
@@ -35,6 +39,7 @@
     adds a tab to instantiate the corresponding Tab, and to destroy it after
     it’s removed from the model.
 */
+
 TabsModel::TabsModel(QObject* parent)
     : QAbstractListModel(parent)
     , m_currentIndex(-1)
@@ -43,6 +48,55 @@ TabsModel::TabsModel(QObject* parent)
 
 TabsModel::~TabsModel()
 {
+}
+
+void TabsModel::save()
+{
+    QFile tabsStorage(tabStorage());
+    if (!tabsStorage.open(QFile::ReadWrite)) {
+        qWarning() << "Failed to open tab storage for writing:" << tabStorage();
+        return;
+    }
+
+    QJsonArray tabs;
+    for (const auto tab : m_tabs) {
+        QVariantMap tabObj;
+        tabObj.insert("url", tab->property("url"));
+        tabObj.insert("title", tab->property("title"));
+        tabObj.insert("icon", tab->property("icon"));
+        tabs << QJsonValue::fromVariant(tabObj);
+    }
+
+    QJsonDocument doc(tabs);
+    tabsStorage.write(doc.toJson());
+}
+
+void TabsModel::load()
+{
+    QFile tabsStorage(tabStorage());
+    if (!tabsStorage.open(QFile::ReadOnly)) {
+        qWarning() << "Failed to open tab storage for reading:" << tabStorage();
+        return;
+    }
+
+    QJsonDocument doc = QJsonDocument::fromJson(tabsStorage.readAll());
+
+    for (const auto& tabEntry : doc.array()) {
+        auto tabObj = new MimiTab;
+        auto tab = tabEntry.toObject();
+        tabObj->setProperty("url", tab.value("url").toString());
+        tabObj->setProperty("title", tab.value("title").toString());
+        tabObj->setProperty("icon", tab.value("icon").toString());
+        add(tabObj);
+    }
+}
+
+QString TabsModel::tabStorage()
+{
+    const QString persistentLocation =
+        QString::fromUtf8(qgetenv("XDG_DATA_HOME")) + QString("/") + QCoreApplication::applicationName();
+    const QString tabStorageFile = QStringLiteral("%1/tabs.json").arg(persistentLocation);
+    return tabStorageFile;
 }
 
 QHash<int, QByteArray> TabsModel::roleNames() const

@@ -8,9 +8,10 @@ Item {
     visible: false
 
     property list<ContentItem> importItems
-    property var activeTransfer
+    property var activeTransfer : null
     property var fileUrls : new Array
     property bool multiple : false
+    property var types : ContentType.All
 
     onImportItemsChanged: {
         if (importItems.length > 0) {
@@ -31,7 +32,37 @@ Item {
     signal accepted()
     signal canceled()
 
-    function open() {
+    function __getTypesForMimeTypes(mimes) {
+        let categories = new Set()
+
+        for (let i = 0; i < mimes.length; i++) {
+            const mimeType = mimes[i]
+            console.log(mimeType)
+
+            if (mimeType.startsWith("image/")) {
+                categories.add(ContentType.Pictures)
+            }
+            else if (mimeType.startsWith("audio/")) {
+                categories.add(ContentType.Music)
+            }
+            else if (mimeType.startsWith("video/")) {
+                categories.add(ContentType.Videos)
+            }
+            else if (mimeType.startsWith("text/")) {
+                categories.add(ContentType.Text)
+            }
+        }
+
+        if (categories.size == 1) {
+            return categories.values()[0]
+        } else {
+            return ContentType.All
+        }
+    }
+
+    function open(multiple, mimes) {
+        dialogRoot.multiple = multiple
+        dialogRoot.types = __getTypesForMimeTypes(mimes)
         dialogRoot.visible = true
     }
 
@@ -43,9 +74,12 @@ Item {
     ContentPeerPicker {
         id: contentPeer
         anchors.fill: parent
-        contentType: ContentType.Documents
+        contentType: dialogRoot.types
         handler: ContentHandler.Source
-        onPeerSelected: { activeTransfer = peer.request() }
+        onPeerSelected: {
+            peer.selectionType = dialogRoot.multiple ? ContentTransfer.Multiple : ContentTransfer.Single
+            activeTransfer = peer.request()
+        }
         onCancelPressed: { dialogRoot.cancel() }
     }
 

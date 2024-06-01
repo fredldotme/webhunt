@@ -19,9 +19,10 @@
 #ifndef __TABS_MODEL_H__
 #define __TABS_MODEL_H__
 
-// Qt
-#include <QtCore/QAbstractListModel>
-#include <QtCore/QList>
+#include <QAbstractListModel>
+#include <QList>
+
+#include "tab.h"
 
 class QObject;
 
@@ -63,6 +64,9 @@ public:
     Q_INVOKABLE int indexOf(QObject* tab) const;
     Q_INVOKABLE void move(int from, int to);
 
+    Q_INVOKABLE void save();
+    Q_INVOKABLE void load();
+
 Q_SIGNALS:
     void currentIndexChanged() const;
     void currentTabChanged() const;
@@ -74,6 +78,8 @@ private Q_SLOTS:
     void onIconChanged();
 
 private:
+    QString tabStorage();
+
     QList<QObject*> m_tabs;
     int m_currentIndex;
 
