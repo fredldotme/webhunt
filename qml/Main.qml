@@ -152,11 +152,12 @@ MainView {
 
                     WPEView {
                         id: webView
-                        url: browserState.tabsModel.currentTab.url
+                        url: browserState.tabsModel.get(index).url
                         width: webViewContainerSwipeView.width
                         height: webViewContainerSwipeView.height
                         onUrlChanged: {
                             urlField.text = webView.url
+                            browserState.tabsModel.get(index).url = webView.url
                             browserState.tabsModel.save()
                         }
 
