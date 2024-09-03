@@ -1,8 +1,8 @@
 {
-    "name": "webhunt.fredldotme",
+    "name": "mimibrowser.fredldotme",
     "description": "A WebKit browser",
     "architecture": "@CLICK_ARCH@",
-    "title": "WebHunt",
+    "title": "Mimi Browser",
     "hooks": {
         "webhunt": {
             "apparmor": "webhunt.apparmor",
