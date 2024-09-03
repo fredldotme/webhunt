@@ -33,7 +33,7 @@ import org.wpewebkit.qtwpe 1.0
 MainView {
     id: root
     objectName: 'mainView'
-    applicationName: 'webhunt.fredldotme'
+    applicationName: 'mimibrowser.fredldotme'
     automaticOrientation: true
 
     width: units.gu(45)
@@ -42,6 +42,8 @@ MainView {
     readonly property int oskMargin : !Qt.inputMethod.visible
                                       ? 0
                                       : (Qt.inputMethod.keyboardRectangle.height / Screen.devicePixelRatio)
+
+    readonly property string defaultPage : "https://duckduckgo.com/"
 
     Page {
         id: rootPage
@@ -64,24 +66,32 @@ MainView {
                     browserState.tabsModel.add(__newTabTemplate)
                     browserState.currentTabIndex = (tabsModel.count - 1)
                 }
+                browserState.tabsModel.save()
                 return __newTabTemplate
             }
 
             function takeSnapshot(callback) {
                 webViewContainer.currentWebView.grabToImage(function(result) {
+                    browserState.tabsModel.saveSnapshot(webViewContainer.currentWebView.url, result.image)
                     bottomEdge.tabsGrid.currentItem.tabSnapshot.source = result.url
                     callback()
                 })
             }
 
-            property MimiTabsModel tabsModel : MimiTabsModel {}
+            property MimiTabsModel tabsModel : MimiTabsModel {
+                onCountChanged: {
+                    if (count == 0) {
+                        browserState.addTab(root.defaultPage)
+                    }
+                }
+            }
             property int currentTabIndex : 0
         }
 
         Component.onCompleted: {
             browserState.tabsModel.load()
             if (browserState.tabsModel.count === 0)
-                browserState.addTab("https://duckduckgo.com/")
+                browserState.addTab(root.defaultPage)
         }
 
         Connections {
@@ -107,18 +117,17 @@ MainView {
                 LomiriNumberAnimation { duration: 100 }
             }
 
-            property var currentWebView: webViewContainerSwipeView.contentItem.children[webViewContainerSwipeView.currentIndex]
+            property var currentWebView: webViewContainerSwipeView.contentChildren[webViewContainerSwipeView.currentIndex]
             readonly property bool fullscreen: currentWebView !== null ? currentWebView.fullscreen : false
 
-            Flickable {
+            QQC2.SwipeView {
                 id: webViewContainerSwipeView
                 //onCurrentIndexChanged: console.log("currentIndex now: " + currentIndex)
                 interactive: false
-                flickableDirection: Flickable.HorizontalFlick
                 width: parent.width
                 height: parent.height
 
-                property int currentIndex: 0
+                currentIndex: browserState.currentTabIndex
                 
                 Connections {
                     target: webViewContainerSwipeView.contentItem
@@ -133,7 +142,7 @@ MainView {
                                 break
                             }
                         }
-                        webViewContainerSwipeView.currentIndex = i
+                        browserState.currentTabIndex = i
                     }
                 }
 
@@ -146,7 +155,11 @@ MainView {
                         url: browserState.tabsModel.currentTab.url
                         width: webViewContainerSwipeView.width
                         height: webViewContainerSwipeView.height
-                        onUrlChanged: urlField.text = webView.url
+                        onUrlChanged: {
+                            urlField.text = webView.url
+                            browserState.tabsModel.save()
+                        }
+
                         readonly property color invertedThemeColor: Qt.rgba(1.0 - themeColor.r,
                                                                             1.0 - themeColor.g,
                                                                             1.0 - themeColor.b,
@@ -392,7 +405,7 @@ MainView {
                     id: swipeDetectionMouseArea
                     anchors.fill: parent
                     propagateComposedEvents: true
-                    enabled: !urlField.focused && bottomEdge.dragProgress == 0.0 && !swipeEndAnimation.running
+                    enabled: false // REENABLE ONCE FINISHED: !urlField.focused && bottomEdge.dragProgress == 0.0 && !swipeEndAnimation.running
                     drag.threshold: 0 // We track on our own and need the startPosX to be exact
 
                     property bool inUse : false
@@ -523,15 +536,32 @@ MainView {
                     readonly property int __cellWidth : webViewContainer.width
                     readonly property int __cellHeight : webViewContainer.height
 
-                    cellWidth: __cellWidth / 2
-                    cellHeight: __cellHeight / 2
+                    cellWidth: (__cellWidth - spacing) / 2
+                    cellHeight: (__cellHeight - spacing) / 2
 
                     model: browserState.tabsModel
-                    delegate: Item {
+                    currentIndex: browserState.currentTabIndex
+
+                    delegate: Flickable {
+                        id: tabDelegate
                         width: tabsGrid.cellWidth
                         height: tabsGrid.cellHeight
+                        flickableDirection: Flickable.HorizontalFlick
+                        opacity: 1.0 - dragProgress
 
+                        onDraggingHorizontallyChanged: {
+                            tabsGrid.interactive = !draggingHorizontally
+                            console.log("Dragging ended, dragProgress " + dragProgress)
+                            if (!draggingHorizontally && dragProgress > 0.67) {
+                                browserState.tabsModel.remove(tabIndex)
+                            }
+                        }
+
+                        readonly property int tabIndex : index
+
+                        property real dragProgress : Math.abs(contentX) / (width / 2)
                         property alias tabSnapshot : tabSnapshot
+                        property string snapshotUrl : "file://" + snapshot
 
                         LomiriShape {
                             id: tabPreviewShape
@@ -575,13 +605,17 @@ MainView {
                                 LomiriNumberAnimation { duration: LomiriAnimation.SnapDuration }
                             }
 
+                            Component.onCompleted: {
+                                console.log("Snapshot URL: " + tabDelegate.snapshotUrl)
+                                tabSnapshot.source = tabDelegate.snapshotUrl
+                            }
+
                             MouseArea {
                                 id: tabsGridCellMouseArea
                                 anchors.fill: parent
                                 onClicked: {
                                     browserState.takeSnapshot(function () {
-                                        browserState.currentTabIndex = index
-                                        tabsGrid.currentIndex = index
+                                        browserState.currentTabIndex = tabDelegate.tabIndex
                                         bottomEdge.collapse()
                                     })
                                 }

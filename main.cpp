@@ -27,7 +27,7 @@
 #include "src/tab.h"
 #include "src/tabs-model.h"
 
-#define APP_ID "webhunt.fredldotme"
+#define APP_ID "mimibrowser.fredldotme"
 
 #if defined(__aarch64__)
 #define ARCH_TRIPLET "aarch64-linux-gnu"

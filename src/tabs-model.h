@@ -21,6 +21,7 @@
 
 #include <QAbstractListModel>
 #include <QList>
+#include <QImage>
 
 #include "tab.h"
 
@@ -37,19 +38,20 @@ class TabsModel : public QAbstractListModel
     Q_PROPERTY(int count READ rowCount NOTIFY countChanged)
 
 public:
-    TabsModel(QObject* parent=0);
+    TabsModel(QObject* parent = nullptr);
     ~TabsModel();
 
     enum Roles {
         Url = Qt::UserRole + 1,
         Title,
         Icon,
-        Tab
+        Tab,
+        Snapshot
     };
 
     // reimplemented from QAbstractListModel
     QHash<int, QByteArray> roleNames() const;
-    int rowCount(const QModelIndex& parent=QModelIndex()) const;
+    int rowCount(const QModelIndex& parent = QModelIndex()) const;
     QVariant data(const QModelIndex& index, int role) const;
 
     int currentIndex() const;
@@ -67,6 +69,8 @@ public:
     Q_INVOKABLE void save();
     Q_INVOKABLE void load();
 
+    Q_INVOKABLE void saveSnapshot(const QString& url, const QImage& image);
+
 Q_SIGNALS:
     void currentIndexChanged() const;
     void currentTabChanged() const;
@@ -79,6 +83,8 @@ private Q_SLOTS:
 
 private:
     QString tabStorage();
+    QString hashForUrl(const QString& url);
+    void removeSnapshot(const QString& url);
 
     QList<QObject*> m_tabs;
     int m_currentIndex;

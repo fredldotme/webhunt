@@ -19,7 +19,9 @@
 #include "tabs-model.h"
 
 #include <QCoreApplication>
+#include <QCryptographicHash>
 #include <QDebug>
+#include <QDir>
 #include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -44,6 +46,10 @@ TabsModel::TabsModel(QObject* parent)
     : QAbstractListModel(parent)
     , m_currentIndex(-1)
 {
+    const QString persistentLocation =
+        QString::fromUtf8(qgetenv("XDG_DATA_HOME")) + QString("/") + QCoreApplication::applicationName();
+    QDir snapshotsDir;
+    snapshotsDir.mkpath(persistentLocation + QString("/snapshots/"));
 }
 
 TabsModel::~TabsModel()
@@ -52,8 +58,11 @@ TabsModel::~TabsModel()
 
 void TabsModel::save()
 {
+    const QString persistentLocation =
+        QString::fromUtf8(qgetenv("XDG_DATA_HOME")) + QString("/") + QCoreApplication::applicationName();
+
     QFile tabsStorage(tabStorage());
-    if (!tabsStorage.open(QFile::ReadWrite)) {
+    if (!tabsStorage.open(QFile::ReadWrite | QFile::Truncate)) {
         qWarning() << "Failed to open tab storage for writing:" << tabStorage();
         return;
     }
@@ -61,9 +70,11 @@ void TabsModel::save()
     QJsonArray tabs;
     for (const auto tab : m_tabs) {
         QVariantMap tabObj;
-        tabObj.insert("url", tab->property("url"));
+        const auto url = tab->property("url").toString();
+        tabObj.insert("url", url);
         tabObj.insert("title", tab->property("title"));
         tabObj.insert("icon", tab->property("icon"));
+        tabObj.insert("snapshot", persistentLocation + QString("/snapshots/") + hashForUrl(url) + QString(".png"));
         tabs << QJsonValue::fromVariant(tabObj);
     }
 
@@ -73,6 +84,9 @@ void TabsModel::save()
 
 void TabsModel::load()
 {
+    const QString persistentLocation =
+        QString::fromUtf8(qgetenv("XDG_DATA_HOME")) + QString("/") + QCoreApplication::applicationName();
+
     QFile tabsStorage(tabStorage());
     if (!tabsStorage.open(QFile::ReadOnly)) {
         qWarning() << "Failed to open tab storage for reading:" << tabStorage();
@@ -84,9 +98,11 @@ void TabsModel::load()
     for (const auto& tabEntry : doc.array()) {
         auto tabObj = new MimiTab;
         auto tab = tabEntry.toObject();
-        tabObj->setProperty("url", tab.value("url").toString());
+        const auto url = tab.value("url").toString();
+        tabObj->setProperty("url", url);
         tabObj->setProperty("title", tab.value("title").toString());
         tabObj->setProperty("icon", tab.value("icon").toString());
+        tabObj->setProperty("snapshot", persistentLocation + QString("/snapshots/") + hashForUrl(url) + QString(".png"));
         add(tabObj);
     }
 }
@@ -107,6 +123,7 @@ QHash<int, QByteArray> TabsModel::roleNames() const
         roles[Title] = "title";
         roles[Icon] = "icon";
         roles[Tab] = "tab";
+        roles[Snapshot] = "snapshot";
     }
     return roles;
 }
@@ -132,6 +149,8 @@ QVariant TabsModel::data(const QModelIndex& index, int role) const
         return tab->property("icon");
     case Tab:
         return QVariant::fromValue(tab);
+    case Snapshot:
+        return tab->property("snapshot");
     default:
         return QVariant();
     }
@@ -228,6 +247,8 @@ QObject* TabsModel::remove(int index)
     beginRemoveRows(QModelIndex(), index, index);
     QObject* tab = m_tabs.takeAt(index);
     tab->disconnect(this);
+    const auto url = qobject_cast<MimiTab*>(tab)->property("url").toString();
+    removeSnapshot(url);
     endRemoveRows();
     Q_EMIT countChanged();
 
@@ -332,3 +353,27 @@ void TabsModel::onIconChanged()
 {
     onDataChanged(sender(), Icon);
 }
+
+QString TabsModel::hashForUrl(const QString& url)
+{
+    const auto urlHash = QCryptographicHash::hash(url.toUtf8(), QCryptographicHash::Sha256).toHex();
+    return QString::fromUtf8(urlHash);
+}
+
+void TabsModel::saveSnapshot(const QString& url, const QImage& image)
+{
+    const auto urlHash = hashForUrl(url);
+    const QString persistentLocation =
+        QString::fromUtf8(qgetenv("XDG_DATA_HOME")) + QString("/") + QCoreApplication::applicationName();
+    const auto filePath = persistentLocation + QString("/snapshots/") + urlHash + QString(".png");
+    qDebug() << filePath << image.save(filePath);
+}
+
+void TabsModel::removeSnapshot(const QString& url)
+{
+    const auto urlHash = hashForUrl(url);
+    const QString persistentLocation =
+        QString::fromUtf8(qgetenv("XDG_DATA_HOME")) + QString("/snapshots/") + QCoreApplication::applicationName();
+    QFile::remove(persistentLocation + QString("/") + urlHash + QString(".png"));
+}
+
