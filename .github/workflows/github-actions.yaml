@@ -12,7 +12,10 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Build
+        if: runner.arch == 'ARM64'
         run: |
           sudo snap install docker
           sudo snap install clickable
