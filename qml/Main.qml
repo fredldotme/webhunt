@@ -81,6 +81,7 @@ MainView {
             property MimiTabsModel tabsModel : MimiTabsModel {
                 onCountChanged: {
                     if (count == 0) {
+                        bottomEdge.collapse()
                         browserState.addTab(root.defaultPage)
                     }
                 }
