@@ -14,13 +14,13 @@ jobs:
         uses: actions/checkout@v4
       - name: Build
         run: |
-          snap install docker
-          snap install clickable
-          snap connect clickable:docker docker
-          snap connect clickable:home
-          snap connect clickable:removable-media
-          snap connect clickable:network
-          snap connect clickable:network-bind
+          sudo snap install docker
+          sudo snap install clickable
+          sudo snap connect clickable:docker docker
+          sudo snap connect clickable:home
+          sudo snap connect clickable:removable-media
+          sudo snap connect clickable:network
+          sudo snap connect clickable:network-bind
           clickable build --arch arm64 --libs
           clickable build --arch arm64
       - name: Archive artifacts
