@@ -1,0 +1,31 @@
+name: CI/CD
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  CI:
+    name: ARM64 build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Build
+        run: |
+          snap install docker
+          snap install clickable
+          snap connect clickable:docker docker
+          snap connect clickable:home
+          snap connect clickable:removable-media
+          snap connect clickable:network
+          snap connect clickable:network-bind
+          clickable build --arch arm64 --libs
+          clickable build --arch arm64
+      - name: Archive artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build
+          path: |
+            build/aarch64-linux-gnu/app/*.click
