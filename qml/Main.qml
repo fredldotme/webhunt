@@ -71,6 +71,11 @@ MainView {
             }
 
             function takeSnapshot(callback) {
+                if (webViewContainer.currentWebView == undefined || webViewContainer.currentWebView == null) {
+                    callback()
+                    return;
+                }
+
                 webViewContainer.currentWebView.grabToImage(function(result) {
                     browserState.tabsModel.saveSnapshot(webViewContainer.currentWebView.url, result.image)
                     bottomEdge.tabsGrid.currentItem.tabSnapshot.source = result.url
@@ -118,7 +123,7 @@ MainView {
                 LomiriNumberAnimation { duration: 100 }
             }
 
-            property var currentWebView: webViewContainerSwipeView.contentChildren[webViewContainerSwipeView.currentIndex]
+            property var currentWebView: webViewContainerSwipeView.contentChildren[browserState.currentTabIndex]
             readonly property bool fullscreen: currentWebView !== null ? currentWebView.fullscreen : false
 
             QQC2.SwipeView {
@@ -581,6 +586,7 @@ MainView {
                         }
 
                         LomiriShape {
+                            id: tabSnapshotShape
                             width: parent.width - (tabsGrid.spacing * 2)
                             height: parent.height - (tabsGrid.spacing * 2)
                             radius: units.gu(2)
@@ -601,7 +607,7 @@ MainView {
                             verticalOffset: 0
                             radius: units.gu(0.5)
                             color: index === browserState.currentTabIndex ? Theme.palette.highlighted.selection : Theme.palette.normal.base
-                            source: index === browserState.currentTabIndex ? tabPreviewShape : tabSnapshot
+                            source: index === browserState.currentTabIndex ? tabPreviewShape : tabSnapshotShape
                             scale: !tabsGridCellMouseArea.pressed ? 1.0 : 0.9
                             Behavior on scale {
                                 LomiriNumberAnimation { duration: LomiriAnimation.SnapDuration }
