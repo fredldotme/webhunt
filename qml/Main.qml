@@ -77,9 +77,9 @@ MainView {
                 }
 
                 webViewContainer.currentWebView.grabToImage(function(result) {
+                    callback();
                     browserState.tabsModel.saveSnapshot(webViewContainer.currentWebView.url, result.image)
                     bottomEdge.tabsGrid.currentItem.tabSnapshot.source = result.url
-                    callback()
                 })
             }
 
@@ -158,12 +158,15 @@ MainView {
 
                     WPEView {
                         id: webView
-                        url: browserState.tabsModel.get(index).url
+                        url: browserState.tabsModel.get(index) ?
+                                 browserState.tabsModel.get(index).url :
+                                 "about:blank"
                         width: webViewContainerSwipeView.width
                         height: webViewContainerSwipeView.height
+                        property int tabIndex : index
                         onUrlChanged: {
                             urlField.text = webView.url
-                            browserState.tabsModel.get(index).url = webView.url
+                            browserState.tabsModel.get(webView.tabIndex).url = webView.url
                             browserState.tabsModel.save()
                         }
 
@@ -556,19 +559,22 @@ MainView {
                         flickableDirection: Flickable.HorizontalFlick
                         opacity: 1.0 - dragProgress
 
+                        property var tab : tabsGrid.model.get(tabIndex)
+
                         onDraggingHorizontallyChanged: {
                             tabsGrid.interactive = !draggingHorizontally
                             console.log("Dragging ended, dragProgress " + dragProgress)
                             if (!draggingHorizontally && dragProgress > 0.67) {
-                                browserState.tabsModel.remove(tabIndex)
+                                browserState.tabsModel.removeSnapshot(tabDelegate.tab.url)
+                                browserState.tabsModel.remove(tabDelegate.tab)
+                                browserState.tabsModel.removeSnapshot(tabDelegate.tab.url)
                             }
                         }
 
                         readonly property int tabIndex : index
 
-                        property real dragProgress : Math.abs(contentX) / (width / 2)
-                        property alias tabSnapshot : tabSnapshot
-                        property string snapshotUrl : "file://" + snapshot
+                        property real dragProgress : Math.abs(tabDelegate.contentX) / (tabDelegate.width / 2)
+                        property string snapshotUrl : "file://" + tabDelegate.tab.snapshot
 
                         LomiriShape {
                             id: tabPreviewShape
@@ -623,8 +629,8 @@ MainView {
                                 anchors.fill: parent
                                 onClicked: {
                                     browserState.takeSnapshot(function () {
-                                        browserState.currentTabIndex = tabDelegate.tabIndex
                                         bottomEdge.collapse()
+                                        browserState.currentTabIndex = tabDelegate.tabIndex
                                     })
                                 }
                             }

@@ -70,6 +70,7 @@ public:
     Q_INVOKABLE void load();
 
     Q_INVOKABLE void saveSnapshot(const QString& url, const QImage& image);
+    Q_INVOKABLE void removeSnapshot(const QString& url);
 
 Q_SIGNALS:
     void currentIndexChanged() const;
@@ -84,7 +85,6 @@ private Q_SLOTS:
 private:
     QString tabStorage();
     QString hashForUrl(const QString& url);
-    void removeSnapshot(const QString& url);
 
     QList<QObject*> m_tabs;
     int m_currentIndex;

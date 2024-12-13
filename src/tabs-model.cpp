@@ -27,6 +27,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QObject>
+#include <QTimer>
 #include <QtGlobal>
 
 /*!
@@ -244,13 +245,12 @@ QObject* TabsModel::remove(int index)
     if (!checkValidTabIndex(index)) {
         return nullptr;
     }
+
     beginRemoveRows(QModelIndex(), index, index);
     QObject* tab = m_tabs.takeAt(index);
-    tab->disconnect(this);
-    const auto url = qobject_cast<MimiTab*>(tab)->property("url").toString();
-    removeSnapshot(url);
-    endRemoveRows();
-    Q_EMIT countChanged();
+
+    if (!tab)
+        return nullptr;
 
     if (index < m_currentIndex) {
         // If we removed any tab before the current one, decrease the
@@ -267,6 +267,10 @@ QObject* TabsModel::remove(int index)
         }
         Q_EMIT currentTabChanged();
     }
+
+    endRemoveRows();
+    Q_EMIT countChanged();
+
     return tab;
 }
 
@@ -275,7 +279,9 @@ QObject* TabsModel::get(int index) const
     if (!checkValidTabIndex(index)) {
         return nullptr;
     }
-    return m_tabs.at(index);
+
+    auto tab = qobject_cast<MimiTab*>(m_tabs.at(index));
+    return tab;
 }
 
 /*!
