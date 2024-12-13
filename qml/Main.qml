@@ -61,7 +61,7 @@ MainView {
                     takeSnapshot(function() {
                         browserState.tabsModel.add(__newTabTemplate)
                         browserState.currentTabIndex = (tabsModel.count - 1)
-                    }, null)
+                    })
                 } else {
                     browserState.tabsModel.add(__newTabTemplate)
                     browserState.currentTabIndex = (tabsModel.count - 1)
@@ -70,15 +70,16 @@ MainView {
                 return __newTabTemplate
             }
 
-            function takeSnapshot(callback, imageItem) {
+            function takeSnapshot(callback) {
                 if (webViewContainer.currentWebView == undefined || webViewContainer.currentWebView == null) {
                     callback()
                     return;
                 }
 
                 webViewContainer.currentWebView.grabToImage(function(result) {
-                    result.saveToFile(browserState.tabsModel.snapshotForUrl(webViewContainer.currentWebView.url));
-                    // if (imageItem) imageItem.source = result.url
+                    const path = browserState.tabsModel.snapshotForUrl(webViewContainer.currentWebView.url)
+                    result.saveToFile(path);
+                    // browserState.tabsModel.get(browserState.currentTabIndex).snapshot = path
                     callback();
                 })
             }
@@ -165,9 +166,19 @@ MainView {
                         height: webViewContainerSwipeView.height
                         property int tabIndex : index
                         onUrlChanged: {
+                            const snapshot = browserState.tabsModel.snapshotForUrl(webView.url)
                             urlField.text = webView.url
                             browserState.tabsModel.get(webView.tabIndex).url = webView.url
+                            browserState.tabsModel.get(webView.tabIndex).snapshot = snapshot
                             browserState.tabsModel.save()
+                        }
+                        onLoadingChanged: {
+                            if (loading || index !== browserState.currentTabIndex)
+                                return;
+
+                            browserState.takeSnapshot(function () {
+                                console.log("Snapshot taken: " + webView.url);
+                            })
                         }
 
                         readonly property color invertedThemeColor: Qt.rgba(1.0 - themeColor.r,
@@ -574,6 +585,7 @@ MainView {
 
                         property real dragProgress : Math.abs(tabDelegate.contentX) / (tabDelegate.width / 2)
                         property string snapshotUrl : "file://" + tabDelegate.tab.snapshot
+                        property alias tabSnapshot : tabSnapshot
 
                         LomiriShape {
                             id: tabPreviewShape
@@ -600,7 +612,7 @@ MainView {
                             source: Image {
                                 id: tabSnapshot
                                 anchors.fill: parent
-                                source: "file://" + tabDelegate.tab.snapshot
+                                source: tabDelegate.snapshotUrl
                             }
                             sourceFillMode: LomiriShape.Stretch
                         }
@@ -625,11 +637,11 @@ MainView {
                                 anchors.fill: parent
                                 onClicked: {
                                     browserState.takeSnapshot(function () {
-                                        bottomEdge.collapse()
-                                        // TODO: Remove if not showing
-                                        //tabSnapshot.source = "file://" + tabDelegate.tab.snapshot
+                                        tabSnapshot.source = ""
+                                        tabSnapshot.source = "file://" + browserState.tabsModel.snapshotForUrl(tabDelegate.tab.url)
                                         browserState.currentTabIndex = tabDelegate.tabIndex
-                                    }, tabSnapshot)
+                                        bottomEdge.collapse()
+                                    })
                                 }
                             }
                         }
