@@ -61,7 +61,7 @@ MainView {
                     takeSnapshot(function() {
                         browserState.tabsModel.add(__newTabTemplate)
                         browserState.currentTabIndex = (tabsModel.count - 1)
-                    })
+                    }, null)
                 } else {
                     browserState.tabsModel.add(__newTabTemplate)
                     browserState.currentTabIndex = (tabsModel.count - 1)
@@ -70,16 +70,16 @@ MainView {
                 return __newTabTemplate
             }
 
-            function takeSnapshot(callback) {
+            function takeSnapshot(callback, imageItem) {
                 if (webViewContainer.currentWebView == undefined || webViewContainer.currentWebView == null) {
                     callback()
                     return;
                 }
 
                 webViewContainer.currentWebView.grabToImage(function(result) {
+                    result.saveToFile(browserState.tabsModel.snapshotForUrl(webViewContainer.currentWebView.url));
+                    // if (imageItem) imageItem.source = result.url
                     callback();
-                    browserState.tabsModel.saveSnapshot(webViewContainer.currentWebView.url, result.image)
-                    bottomEdge.tabsGrid.currentItem.tabSnapshot.source = result.url
                 })
             }
 
@@ -559,15 +559,14 @@ MainView {
                         flickableDirection: Flickable.HorizontalFlick
                         opacity: 1.0 - dragProgress
 
-                        property var tab : tabsGrid.model.get(tabIndex)
+                        property var tab : browserState.tabsModel.get(tabIndex)
 
                         onDraggingHorizontallyChanged: {
                             tabsGrid.interactive = !draggingHorizontally
                             console.log("Dragging ended, dragProgress " + dragProgress)
                             if (!draggingHorizontally && dragProgress > 0.67) {
                                 browserState.tabsModel.removeSnapshot(tabDelegate.tab.url)
-                                browserState.tabsModel.remove(tabDelegate.tab)
-                                browserState.tabsModel.removeSnapshot(tabDelegate.tab.url)
+                                browserState.tabsModel.remove(tabIndex)
                             }
                         }
 
@@ -584,9 +583,9 @@ MainView {
                             backgroundColor: "transparent"
                             visible: false
                             source: ShaderEffectSource {
-                                sourceItem: webViewContainer
+                                sourceItem: webViewContainerSwipeView.contentChildren[tabDelegate.tabIndex] // webViewContainer
                                 anchors.fill: parent
-                                sourceRect: Qt.rect(0, 0, webViewContainer.width, webViewContainer.height)
+                                sourceRect: Qt.rect(0, 0, sourceItem.width, sourceItem.height)
                             }
                             sourceFillMode: LomiriShape.Stretch
                         }
@@ -601,6 +600,7 @@ MainView {
                             source: Image {
                                 id: tabSnapshot
                                 anchors.fill: parent
+                                source: "file://" + tabDelegate.tab.snapshot
                             }
                             sourceFillMode: LomiriShape.Stretch
                         }
@@ -612,16 +612,12 @@ MainView {
                             horizontalOffset: 0
                             verticalOffset: 0
                             radius: units.gu(0.5)
-                            color: index === browserState.currentTabIndex ? Theme.palette.highlighted.selection : Theme.palette.normal.base
-                            source: index === browserState.currentTabIndex ? tabPreviewShape : tabSnapshotShape
+                            color: tabDelegate.tabIndex === browserState.currentTabIndex ? Theme.palette.highlighted.selection : Theme.palette.normal.base
+                            source: tabDelegate.tabIndex === browserState.currentTabIndex ? tabPreviewShape : tabSnapshotShape
+                            onSourceChanged: { console.log("index: " + tabDelegate.tabIndex + " changed " + tabDelegate.tab.url) }
                             scale: !tabsGridCellMouseArea.pressed ? 1.0 : 0.9
                             Behavior on scale {
                                 LomiriNumberAnimation { duration: LomiriAnimation.SnapDuration }
-                            }
-
-                            Component.onCompleted: {
-                                console.log("Snapshot URL: " + tabDelegate.snapshotUrl)
-                                tabSnapshot.source = tabDelegate.snapshotUrl
                             }
 
                             MouseArea {
@@ -630,8 +626,10 @@ MainView {
                                 onClicked: {
                                     browserState.takeSnapshot(function () {
                                         bottomEdge.collapse()
+                                        // TODO: Remove if not showing
+                                        //tabSnapshot.source = "file://" + tabDelegate.tab.snapshot
                                         browserState.currentTabIndex = tabDelegate.tabIndex
-                                    })
+                                    }, tabSnapshot)
                                 }
                             }
                         }

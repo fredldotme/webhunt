@@ -71,6 +71,7 @@ public:
 
     Q_INVOKABLE void saveSnapshot(const QString& url, const QImage& image);
     Q_INVOKABLE void removeSnapshot(const QString& url);
+    Q_INVOKABLE QString snapshotForUrl(const QString& url);
 
 Q_SIGNALS:
     void currentIndexChanged() const;

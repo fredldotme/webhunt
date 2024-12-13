@@ -246,11 +246,11 @@ QObject* TabsModel::remove(int index)
         return nullptr;
     }
 
-    beginRemoveRows(QModelIndex(), index, index);
     QObject* tab = m_tabs.takeAt(index);
-
     if (!tab)
         return nullptr;
+
+    beginRemoveRows(QModelIndex(), index, index);
 
     if (index < m_currentIndex) {
         // If we removed any tab before the current one, decrease the
@@ -364,6 +364,15 @@ QString TabsModel::hashForUrl(const QString& url)
 {
     const auto urlHash = QCryptographicHash::hash(url.toUtf8(), QCryptographicHash::Sha256).toHex();
     return QString::fromUtf8(urlHash);
+}
+
+QString TabsModel::snapshotForUrl(const QString& url)
+{
+    const auto urlHash = hashForUrl(url);
+    const QString persistentLocation =
+        QString::fromUtf8(qgetenv("XDG_DATA_HOME")) + QString("/") + QCoreApplication::applicationName();
+    const auto filePath = persistentLocation + QString("/snapshots/") + urlHash + QString(".png");
+    return filePath;
 }
 
 void TabsModel::saveSnapshot(const QString& url, const QImage& image)

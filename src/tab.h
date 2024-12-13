@@ -29,6 +29,7 @@ class MimiTab : public QObject
     Q_PROPERTY(QString url MEMBER url NOTIFY urlChanged)
     Q_PROPERTY(QString title MEMBER title NOTIFY titleChanged)
     Q_PROPERTY(QString icon MEMBER icon NOTIFY iconChanged)
+    Q_PROPERTY(QString snapshot MEMBER snapshot NOTIFY snapshotChanged)
 
 public:
     MimiTab() = default;
@@ -36,11 +37,13 @@ public:
     QString url;
     QString title;
     QString icon;
+    QString snapshot;
 
 Q_SIGNALS:
     void urlChanged() const;
     void titleChanged() const;
     void iconChanged() const;
+    void snapshotChanged() const;
 };
 
 #endif
