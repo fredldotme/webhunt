@@ -53,6 +53,8 @@ MainView {
         QtObject {
             id: browserState
 
+            signal snapshotTaken()
+
             property MimiTab __newTabTemplate : MimiTab {}
 
             function addTab(url, newViewRequest) {
@@ -71,7 +73,7 @@ MainView {
             }
 
             function takeSnapshot(callback) {
-                if (webViewContainer.currentWebView == undefined || webViewContainer.currentWebView == null) {
+                if (webViewContainer.currentWebView == null) {
                     callback()
                     return;
                 }
@@ -79,7 +81,7 @@ MainView {
                 webViewContainer.currentWebView.grabToImage(function(result) {
                     const path = browserState.tabsModel.snapshotForUrl(webViewContainer.currentWebView.url)
                     result.saveToFile(path);
-                    // browserState.tabsModel.get(browserState.currentTabIndex).snapshot = path
+                    browserState.snapshotTaken();
                     callback();
                 })
             }
@@ -124,7 +126,9 @@ MainView {
                 LomiriNumberAnimation { duration: 100 }
             }
 
-            property var currentWebView: webViewContainerSwipeView.contentChildren[browserState.currentTabIndex]
+            property var currentWebView: browserState.tabsModel.count > 0 ?
+                                             webViewContainerSwipeView.contentChildren[browserState.currentTabIndex] :
+                                             null
             readonly property bool fullscreen: currentWebView !== null ? currentWebView.fullscreen : false
 
             QQC2.SwipeView {
@@ -135,7 +139,7 @@ MainView {
                 height: parent.height
 
                 currentIndex: browserState.currentTabIndex
-                
+
                 Connections {
                     target: webViewContainerSwipeView.contentItem
                     onXChanged: {
@@ -166,18 +170,19 @@ MainView {
                         height: webViewContainerSwipeView.height
                         property int tabIndex : index
                         onUrlChanged: {
-                            const snapshot = browserState.tabsModel.snapshotForUrl(webView.url)
-                            urlField.text = webView.url
-                            browserState.tabsModel.get(webView.tabIndex).url = webView.url
-                            browserState.tabsModel.get(webView.tabIndex).snapshot = snapshot
-                            browserState.tabsModel.save()
+                            if (index === browserState.currentTabIndex)
+                                urlField.text = webView.url
                         }
                         onLoadingChanged: {
-                            if (loading || index !== browserState.currentTabIndex)
+                            if (loading || webView.tabIndex !== browserState.currentTabIndex)
                                 return;
 
                             browserState.takeSnapshot(function () {
                                 console.log("Snapshot taken: " + webView.url);
+                                const snapshot = browserState.tabsModel.snapshotForUrl(webView.url)
+                                browserState.tabsModel.get(webView.tabIndex).url = webView.url
+                                browserState.tabsModel.get(webView.tabIndex).snapshot = snapshot
+                                browserState.tabsModel.save()
                             })
                         }
 
@@ -242,16 +247,18 @@ MainView {
             height: implicitHeight
             opacity: 1.0 - bottomEdge.dragProgress
 
-            readonly property bool hidden :
+            readonly property bool hidden : (!webViewContainer.currentWebView) ? false :
                 webViewContainer.currentWebView.fullscreen || webViewContainer.currentWebView.filePicker.visible
 
             ProgressBar {
                 minimumValue: 0.0
                 maximumValue: 1.0
-                value: webViewContainer.currentWebView.loadProgress / 100.0
+                value: !webViewContainer.currentWebView ? 0.0 :
+                           webViewContainer.currentWebView.loadProgress / 100.0
                 width: parent.width
                 height: units.gu(0.5)
-                visible: webViewContainer.currentWebView.loading
+                visible: !webViewContainer.currentWebView ? false :
+                           webViewContainer.currentWebView.loading
             }
 
             // Bottom edge container
@@ -262,7 +269,8 @@ MainView {
 
                 Rectangle {
                     anchors.fill: parent
-                    color: webViewContainer.currentWebView.themeColor
+                    color: !webViewContainer.currentWebView ? "black" :
+                               webViewContainer.currentWebView.themeColor
                     opacity: 0.7
                     Behavior on color {
                         ColorAnimation { duration: LomiriAnimation.SnapDuration }
@@ -289,10 +297,12 @@ MainView {
 
                         MimiButton {
                             iconName: "go-previous"
-                            iconColor: webViewContainer.currentWebView.invertedThemeColor
+                            iconColor: !webViewContainer.currentWebView ? "black" :
+                                           webViewContainer.currentWebView.invertedThemeColor
                             scale: !pressed ? 1.0 : 0.8
 
-                            readonly property bool visibility: webViewContainer.currentWebView.canGoBack
+                            readonly property bool visibility: !webViewContainer.currentWebView ? false :
+                                                                   webViewContainer.currentWebView.canGoBack
                             y: units.gu(1)
                             width: visibility ? units.gu(4) : 0
                             height: parent.height - units.gu(2)
@@ -316,10 +326,12 @@ MainView {
                         }
                         MimiButton {
                             iconName: "go-next"
-                            iconColor: webViewContainer.currentWebView.invertedThemeColor
+                            iconColor: !webViewContainer.currentWebView ? "black" :
+                                           webViewContainer.currentWebView.invertedThemeColor
                             scale: !pressed ? 1.0 : 0.8
                             
-                            readonly property bool visibility: webViewContainer.currentWebView.canGoForward
+                            readonly property bool visibility: !webViewContainer.currentWebView ? false :
+                                                                   webViewContainer.currentWebView.canGoForward
                             y: units.gu(1)
                             width: visibility ? units.gu(4) : 0
                             height: parent.height - units.gu(2)
@@ -351,8 +363,10 @@ MainView {
                         anchors.centerIn: parent
                         width: entryFocus ? parent.width - units.gu(4) : Math.min((parent.width / 3) * 2, parent.width - (navigationRow.width * 2) - (newTabButton.width * 2))
                         height: parent.height
-                        placeholderText: webViewContainer.currentWebView.title !== "" ? webViewContainer.currentWebView.title : qsTr("Loading...")
-                        placeholderColor: webViewContainer.currentWebView.invertedThemeColor
+                        placeholderText: !webViewContainer.currentWebView ? "" :
+                                             webViewContainer.currentWebView.title !== "" ? webViewContainer.currentWebView.title : qsTr("Loading...")
+                        placeholderColor: !webViewContainer.currentWebView ? "black" :
+                                             webViewContainer.currentWebView.invertedThemeColor
                         onFocusChanged: {
                             text = webViewContainer.currentWebView.url
                         }
@@ -382,7 +396,7 @@ MainView {
                         width: height
                         visible: !urlField.entryFocus
                         iconName: "add"
-                        iconColor: webViewContainer.currentWebView.invertedThemeColor
+                        iconColor: webViewContainer.currentWebView ? webViewContainer.currentWebView.invertedThemeColor : "black"
                         scale: !pressed ? 1.0 : 0.8
                         Behavior on scale {
                             LomiriNumberAnimation { duration: LomiriAnimation.SnapDuration }
@@ -540,7 +554,7 @@ MainView {
                 Rectangle {
                     anchors.fill: bottomEdgeContainer
                     opacity: 0.7
-                    color: webViewContainer.currentWebView.themeColor
+                    color: !webViewContainer.currentWebView ? "black" : webViewContainer.currentWebView.themeColor
                 }
 
                 GridView {
@@ -570,7 +584,15 @@ MainView {
                         flickableDirection: Flickable.HorizontalFlick
                         opacity: 1.0 - dragProgress
 
+                        function takeSnapshotNow() {
+                            browserState.takeSnapshot(function () {
+                                tabDelegate.snapshotUrl = ""
+                                tabDelegate.snapshotUrl = "file://" + browserState.tabsModel.snapshotForUrl(tabDelegate.tab.url)
+                            });
+                        }
+
                         property var tab : browserState.tabsModel.get(tabIndex)
+                        property Item webView : webViewContainerSwipeView.contentChildren[tabDelegate.tabIndex]
 
                         onDraggingHorizontallyChanged: {
                             tabsGrid.interactive = !draggingHorizontally
@@ -582,9 +604,12 @@ MainView {
                         }
 
                         readonly property int tabIndex : index
+                        onTabIndexChanged: {
+                            tabPreviewSource.sourceItem = webViewContainerSwipeView.contentChildren[tabIndex]
+                        }
 
                         property real dragProgress : Math.abs(tabDelegate.contentX) / (tabDelegate.width / 2)
-                        property string snapshotUrl : "file://" + tabDelegate.tab.snapshot
+                        property string snapshotUrl : "file://" + browserState.tabsModel.snapshotForUrl(tabDelegate.tab.url)
                         property alias tabSnapshot : tabSnapshot
 
                         LomiriShape {
@@ -595,7 +620,8 @@ MainView {
                             backgroundColor: "transparent"
                             visible: false
                             source: ShaderEffectSource {
-                                sourceItem: webViewContainerSwipeView.contentChildren[tabDelegate.tabIndex] // webViewContainer
+                                id: tabPreviewSource
+                                sourceItem: webViewContainerSwipeView.contentChildren[tabDelegate.tabIndex]
                                 anchors.fill: parent
                                 sourceRect: Qt.rect(0, 0, sourceItem.width, sourceItem.height)
                             }
@@ -624,8 +650,11 @@ MainView {
                             horizontalOffset: 0
                             verticalOffset: 0
                             radius: units.gu(0.5)
-                            color: tabDelegate.tabIndex === browserState.currentTabIndex ? Theme.palette.highlighted.selection : Theme.palette.normal.base
-                            source: tabDelegate.tabIndex === browserState.currentTabIndex ? tabPreviewShape : tabSnapshotShape
+                            color: Qt.rgba(tabDelegate.webView.themeColor.r,
+                                           tabDelegate.webView.themeColor.g,
+                                           tabDelegate.webView.themeColor.b,
+                                           1.0)
+                            source: tabDelegate.snapshotUrl !== "" ? tabPreviewShape : tabSnapshotShape
                             onSourceChanged: { console.log("index: " + tabDelegate.tabIndex + " changed " + tabDelegate.tab.url) }
                             scale: !tabsGridCellMouseArea.pressed ? 1.0 : 0.9
                             Behavior on scale {
@@ -636,12 +665,10 @@ MainView {
                                 id: tabsGridCellMouseArea
                                 anchors.fill: parent
                                 onClicked: {
-                                    browserState.takeSnapshot(function () {
-                                        tabSnapshot.source = ""
-                                        tabSnapshot.source = "file://" + browserState.tabsModel.snapshotForUrl(tabDelegate.tab.url)
-                                        browserState.currentTabIndex = tabDelegate.tabIndex
-                                        bottomEdge.collapse()
-                                    })
+                                    tabDelegate.takeSnapshotNow();
+                                    browserState.currentTabIndex = tabDelegate.tabIndex
+                                    tabDelegate.snapshotUrl = ""
+                                    bottomEdge.collapse()
                                 }
                             }
                         }
