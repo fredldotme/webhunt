@@ -1,33 +1,12 @@
 [submodule "libs/WebKit"]
 	path = libs/WebKit
 	url = https://github.com/fredldotme/WebKit.git
-[submodule "libs/glib"]
-	path = libs/glib
-	url = https://gitlab.gnome.org/GNOME/glib.git
-[submodule "libs/libsoup"]
-	path = libs/libsoup
-	url = https://gitlab.gnome.org/GNOME/libsoup.git
-[submodule "libs/nghttp2"]
-	path = libs/nghttp2
-	url = https://github.com/nghttp2/nghttp2.git
-[submodule "libs/glib-networking"]
-	path = libs/glib-networking
-	url = https://gitlab.gnome.org/GNOME/glib-networking.git
 [submodule "libs/libwpe"]
 	path = libs/libwpe
 	url = https://github.com/WebPlatformForEmbedded/libwpe.git
 [submodule "libs/WPEBackend-fdo"]
 	path = libs/WPEBackend-fdo
 	url = https://github.com/fredldotme/WPEBackend-fdo.git
-[submodule "libs/wayland-protocols"]
-	path = libs/wayland-protocols
-	url = https://gitlab.freedesktop.org/wayland/wayland-protocols.git
-[submodule "libs/wayland"]
-	path = libs/wayland
-	url = https://gitlab.freedesktop.org/wayland/wayland.git
-[submodule "libs/openssl"]
-	path = libs/openssl
-	url = https://github.com/openssl/openssl.git
 [submodule "libs/wpewebkit-qt"]
 	path = libs/wpewebkit-qt
 	url = https://github.com/fredldotme/wpewebkit-qt.git
