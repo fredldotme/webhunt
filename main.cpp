@@ -58,10 +58,15 @@ int main(int argc, char *argv[])
     qputenv("GST_GL_PLATFORM", "egl");
     qputenv("GST_GL_WINDOW", "wayland");
 
+    qputenv("GST_REGISTRY", "/home/phablet/.cache/" APP_ID "/gstreamer.cache");
+    qputenv("GST_PLUGIN_PATH", "/opt/click.ubuntu.com/" APP_ID "/current/lib/" ARCH_TRIPLET "gstreamer-1.0");
+
     qputenv("WEBKIT_FORCE_VBLANK_TIMER", "1");
-    qputenv("WEBKIT_GST_CUSTOM_VIDEO_SINK", "hybrissink");
-    //qputenv("GST_DEBUG", "*hybris*:7,*mir*:7");
-    qputenv("WEBKIT_GST_USE_PLAYBIN3", "0");
+    //qputenv("WEBKIT_GST_CUSTOM_VIDEO_PIPELINE", "droideglsink");
+    qputenv("WEBKIT_GST_CUSTOM_VIDEO_SINK", "droidvideotexturesink");
+    //qputenv("WEBKIT_GST_CUSTOM_VIDEO_SINK", "droideglsink");
+    //qputenv("GST_DEBUG", "*:7");
+    //qputenv("WEBKIT_GST_USE_PLAYBIN3", "0");
 
     qputenv("WPE_SHELL_MEDIA_DISK_CACHE_PATH", cachePath.toUtf8());
 
