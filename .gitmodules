@@ -10,3 +10,15 @@
 [submodule "libs/wpewebkit-qt"]
 	path = libs/wpewebkit-qt
 	url = https://github.com/fredldotme/wpewebkit-qt.git
+[submodule "libs/gst-droid"]
+	path = libs/gst-droid
+	url = https://github.com/sailfishos/gst-droid.git
+[submodule "libs/nemo-gst-interfaces"]
+	path = libs/nemo-gst-interfaces
+	url = https://github.com/sailfishos/nemo-gst-interfaces.git
+[submodule "libs/droidmedia"]
+	path = libs/droidmedia
+	url = https://github.com/sailfishos/droidmedia.git
+[submodule "libs/gst-droidmediabuffer-gl"]
+	path = libs/gst-droidmediabuffer-gl
+	url = https://github.com/fredldotme/gst-droidmediabuffer_to_glmemory.git
