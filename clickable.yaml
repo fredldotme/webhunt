@@ -3,6 +3,10 @@ builder: cmake
 kill: webhunt
 
 install_lib:
+  - "build/$ARCH_TRIPLET/nemo-gst-interfaces/install/lib/lib*.so*"
+  - "build/$ARCH_TRIPLET/gst-droid/install/lib/lib*.so*"
+  - "build/$ARCH_TRIPLET/gst-droid/install/lib/gstreamer-1.0"
+  - "build/$ARCH_TRIPLET/gst-droidmediabuffer-gl/install/lib/gstreamer-1.0"
   - "build/$ARCH_TRIPLET/WebKit/install/lib/lib*.so*"
   - "build/$ARCH_TRIPLET/WebKit/install/libexec/*"
   - "build/$ARCH_TRIPLET/WebKit/install/lib/wpe-webkit-2.0/*"
@@ -22,6 +26,53 @@ dependencies_target:
   - qtwayland5
 
 libraries:
+  nemo-gst-interfaces:
+    make_jobs: 4
+    builder: custom
+    build: "cp -a $SRC_DIR/* $BUILD_DIR && cd $BUILD_DIR && ./autogen.sh && ./configure --prefix=$INSTALL_DIR --host=$ARCH_TRIPLET && make -j$NUM_PROCS && make install"
+    dependencies_host:
+      - pkg-config
+      - libtool
+      - libtool-bin
+    dependencies_target:
+      - libgstreamer1.0-dev
+      - libgstreamer-plugins-base1.0-dev
+
+  droidmedia:
+    make_jobs: 4
+    builder: custom
+    build: "cd $BUILD_DIR && meson setup -Dpkg_config_path=$NEMO_GST_INTERFACES_LIB_INSTALL_DIR/lib/pkgconfig --cross-file $ROOT/libs/cross-compile.ini $BUILD_DIR $SRC_DIR --prefix=$INSTALL_DIR && ninja && ninja install && sed -i 's|^Cflags:.*|Cflags: -I${includedir}/droidmedia -I${includedir}|g' $INSTALL_DIR/lib/pkgconfig/droidmedia.pc"
+    dependencies_host:
+      - meson
+      - ninja-build
+
+  gst-droid:
+    make_jobs: 4
+    builder: custom
+    build: "cd $BUILD_DIR && meson setup -Dpkg_config_path=$NEMO_GST_INTERFACES_LIB_INSTALL_DIR/lib/pkgconfig:$DROIDMEDIA_LIB_INSTALL_DIR/lib/pkgconfig --cross-file $ROOT/libs/cross-compile.ini $BUILD_DIR $SRC_DIR --prefix=$INSTALL_DIR && ninja && ninja install"
+    dependencies_host:
+      - meson
+      - ninja-build
+    dependencies_target:
+      - libexif-dev
+      - libgstreamer1.0-dev
+      - libgstreamer-plugins-base1.0-dev
+      - libgstreamer-plugins-good1.0-dev
+      - libgstreamer-plugins-bad1.0-dev
+
+  gst-droidmediabuffer-gl:
+    make_jobs: 4
+    builder: custom
+    build: "export PKG_CONFIG_PATH=$GST_DROID_LIB_INSTALL_DIR/lib/pkgconfig:$DROIDMEDIA_LIB_INSTALL_DIR/lib/pkgconfig && cp -a $SRC_DIR/* $BUILD_DIR && cd $BUILD_DIR && ./autogen.sh && ./configure --prefix=$INSTALL_DIR --host=$ARCH_TRIPLET && make -j$NUM_PROCS && make install"
+    dependencies_host:
+      - pkg-config
+      - libtool
+      - libtool-bin
+      - android-headers
+    dependencies_target:
+      - libgstreamer1.0-dev
+      - libgstreamer-plugins-base1.0-dev
+
   libwpe:
     make_jobs: 4
     builder: custom
