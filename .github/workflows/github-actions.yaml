@@ -17,7 +17,7 @@ jobs:
       - name: Build
         run: |
           sudo snap install docker
-          sudo snap install clickable
+          sudo snap install --edge clickable
           sudo snap connect clickable:docker docker
           sudo snap connect clickable:home
           sudo snap connect clickable:removable-media
