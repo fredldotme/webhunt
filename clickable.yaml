@@ -15,6 +15,7 @@ install_lib:
   - "build/$ARCH_TRIPLET/libwpe/install/lib/libwpe-1.0.so*"
   - "/usr/lib/$ARCH_TRIPLET/libpsl.so*"
   - "/usr/lib/$ARCH_TRIPLET/libwoff2*.so*"
+  - "/usr/lib/$ARCH_TRIPLET/libmanette-0.2.so*"
   - "/usr/lib/$ARCH_TRIPLET/libharfbuzz-icu.so*"
   - "/usr/lib/$ARCH_TRIPLET/libQt5WaylandClient.so*"
   - "/usr/lib/$ARCH_TRIPLET/qt5/plugins/platforms"
@@ -28,6 +29,7 @@ dependencies_target:
   - libpsl5
   - qtwayland5
   - libharfbuzz-icu0
+  - libmanette-0.2-0
 
 libraries:
   nemo-gst-interfaces:
