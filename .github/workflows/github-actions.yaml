@@ -27,8 +27,8 @@ jobs:
           sudo snap connect clickable:ssh-keys
           sudo snap connect clickable:ssh-public-keys
           sudo snap connect clickable:adb-support
-          clickable build --docker-image clickable/ci-utnext-arm64 --arch arm64 --libs
-          clickable build --docker-image clickable/ci-utnext-arm64 --arch arm64 --skip-review
+          clickable build --arch arm64 --libs
+          clickable build --arch arm64 --skip-review
       - name: Archive artifacts
         uses: actions/upload-artifact@v4
         with:
